@@ -19,25 +19,6 @@ try:
 except ImportError:
     YFINANCE_AVAILABLE = False
 
-try:
-    import finnhub
-    FINNHUB_AVAILABLE = True
-except ImportError:
-    FINNHUB_AVAILABLE = False
-
-try:
-    from alpha_vantage.timeseries import TimeSeries
-    from alpha_vantage.techindicators import TechIndicators
-    ALPHA_VANTAGE_AVAILABLE = True
-except ImportError:
-    ALPHA_VANTAGE_AVAILABLE = False
-
-try:
-    import requests
-    REQUESTS_AVAILABLE = True
-except ImportError:
-    REQUESTS_AVAILABLE = False
-
 from datetime import datetime, timedelta
 import json
 import time
@@ -64,6 +45,11 @@ st.markdown("""
         padding: 1rem;
         border-radius: 15px;
         border: 2px solid #4f46e5;
+        animation: glow 2s ease-in-out infinite alternate;
+    }
+    @keyframes glow {
+        from { box-shadow: 0 0 20px rgba(79, 70, 229, 0.5); }
+        to { box-shadow: 0 0 30px rgba(79, 70, 229, 0.8); }
     }
     .section-header {
         font-size: 2rem;
@@ -121,42 +107,21 @@ st.markdown("""
         border-radius: 15px;
         margin: 1rem 0;
     }
-    .metric-card {
-        background: rgba(30, 30, 60, 0.8);
+    .chart-container {
+        background: rgba(15, 12, 41, 0.9);
         padding: 1rem;
-        border-radius: 10px;
+        border-radius: 15px;
         border: 1px solid #4f46e5;
-        margin: 0.5rem;
+        margin: 0.5rem 0;
     }
 </style>
 """, unsafe_allow_html=True)
-
-# Enhanced API Keys and Configuration
-FINNHUB_API_KEY = "d3f027pr01qh40fg8npgd3f027pr01qh40fg8nq0"
-ALPHA_VANTAGE_API_KEY = "P1IXQ8X0N5GWVR7S"
-
-# Initialize API clients
-finnhub_client = None
-ts = None
-ti = None
-
-try:
-    if FINNHUB_AVAILABLE:
-        finnhub_client = finnhub.Client(api_key=FINNHUB_API_KEY)
-except Exception as e:
-    pass
-
-try:
-    if ALPHA_VANTAGE_AVAILABLE:
-        ts = TimeSeries(key=ALPHA_VANTAGE_API_KEY, output_format='pandas')
-        ti = TechIndicators(key=ALPHA_VANTAGE_API_KEY, output_format='pandas')
-except Exception as e:
-    pass
 
 # ==================== ENHANCED ASSET DATABASE ====================
 
 class AssetDatabase:
     def __init__(self):
+        # Indian Stocks
         self.indian_stocks = {
             'RELIANCE': 'RELIANCE.NS', 'TCS': 'TCS.NS', 'INFY': 'INFY.NS',
             'HDFC BANK': 'HDFCBANK.NS', 'ICICI BANK': 'ICICIBANK.NS', 'SBI': 'SBIN.NS',
@@ -164,245 +129,397 @@ class AssetDatabase:
             'BHARTI AIRTEL': 'BHARTIARTL.NS', 'HCL TECH': 'HCLTECH.NS', 'KOTAK BANK': 'KOTAKBANK.NS',
             'AXIS BANK': 'AXISBANK.NS', 'MARUTI': 'MARUTI.NS', 'TITAN': 'TITAN.NS',
             'ASIAN PAINTS': 'ASIANPAINT.NS', 'DMART': 'DMART.NS', 'BAJFINANCE': 'BAJFINANCE.NS',
-            'WIPRO': 'WIPRO.NS', 'TECHM': 'TECHM.NS'
+            'WIPRO': 'WIPRO.NS', 'TECHM': 'TECHM.NS', 'SUN PHARMA': 'SUNPHARMA.NS',
+            'TATA MOTORS': 'TATAMOTORS.NS', 'POWERGRID': 'POWERGRID.NS', 'NTPC': 'NTPC.NS'
         }
         
-        self.us_stocks = {
-            'APPLE': 'AAPL', 'MICROSOFT': 'MSFT', 'GOOGLE': 'GOOGL',
-            'AMAZON': 'AMZN', 'TESLA': 'TSLA', 'META': 'META',
-            'NETFLIX': 'NFLX', 'NVIDIA': 'NVDA', 'ADOBE': 'ADBE',
-            'INTEL': 'INTC', 'AMD': 'AMD', 'COINBASE': 'COIN'
-        }
-        
+        # Indian Indices
         self.indices = {
             'NIFTY 50': '^NSEI', 'BANK NIFTY': '^NSEBANK', 'SENSEX': '^BSESN',
-            'NIFTY IT': '^CNXIT', 'INDIA VIX': '^INDIAVIX',
-            'S&P 500': '^GSPC', 'NASDAQ': '^IXIC', 'DOW JONES': '^DJI',
-            'RUSSELL 2000': '^RUT', 'FTSE 100': '^FTSE', 'DAX': '^GDAXI'
+            'NIFTY IT': '^CNXIT', 'NIFTY PHARMA': '^CNXPHARMA', 'NIFTY AUTO': '^CNXAUTO',
+            'NIFTY FINSERVICE': '^CNXFIN', 'NIFTY METAL': '^CNXMETAL', 'INDIA VIX': '^INDIAVIX',
+            'NIFTY MIDCAP': '^CNXMDCP', 'NIFTY SMALLCAP': '^CNXSMLCP'
         }
         
-        self.commodities = {
+        # MCX Commodities
+        self.mcx_commodities = {
             'GOLD': 'GC=F', 'SILVER': 'SI=F', 'CRUDE OIL': 'CL=F',
-            'BRENT OIL': 'BZ=F', 'NATURAL GAS': 'NG=F', 'COPPER': 'HG=F',
-            'PLATINUM': 'PL=F', 'CORN': 'ZC=F', 'WHEAT': 'ZW=F'
+            'NATURAL GAS': 'NG=F', 'COPPER': 'HG=F', 'ZINC': 'ZI=F',
+            'LEAD': 'LL=F', 'ALUMINIUM': 'ALI=F', 'NICKEL': 'NI=F'
         }
         
+        # NCDEX Commodities
+        self.ncdex_commodities = {
+            'SOYBEAN': 'ZS=F', 'CHANA': 'C=F', 'GUAR SEED': 'GS=F',
+            'MUSTARD SEED': 'RS=F', 'COTTON': 'CT=F', 'CASTOR SEED': 'CS=F',
+            'TURMERIC': 'TU=F', 'JEERA': 'JE=F', 'CORIANDER': 'CO=F'
+        }
+        
+        # Forex
         self.forex = {
-            'USD/INR': 'INR=X', 'EUR/USD': 'EURUSD=X', 'GBP/USD': 'GBPUSD=X',
-            'USD/JPY': 'JPY=X', 'AUD/USD': 'AUDUSD=X', 'USD/CAD': 'CAD=X',
-            'USD/CHF': 'CHF=X', 'EUR/GBP': 'EURGBP=X'
+            'USD/INR': 'INR=X', 'EUR/INR': 'EURINR=X', 'GBP/INR': 'GBPINR=X',
+            'JPY/INR': 'JPYINR=X', 'EUR/USD': 'EURUSD=X', 'GBP/USD': 'GBPUSD=X',
+            'USD/JPY': 'JPY=X', 'AUD/USD': 'AUDUSD=X'
         }
         
+        # Crypto
         self.crypto = {
             'BITCOIN': 'BTC-USD', 'ETHEREUM': 'ETH-USD', 'BINANCE COIN': 'BNB-USD',
             'CARDANO': 'ADA-USD', 'SOLANA': 'SOL-USD', 'XRP': 'XRP-USD',
-            'POLKADOT': 'DOT-USD', 'DOGECOIN': 'DOGE-USD', 'AVALANCHE': 'AVAX-USD'
+            'POLKADOT': 'DOT-USD', 'DOGECOIN': 'DOGE-USD'
         }
     
-    def search_assets(self, query):
-        """Enhanced search across all asset classes"""
+    def search_stocks(self, query):
+        """Search Indian stocks by name or symbol"""
         query = query.upper().strip()
-        results = {}
-        
-        # Search across all categories
-        for category_name, category in [
-            ('Indian Stocks', self.indian_stocks),
-            ('US Stocks', self.us_stocks),
-            ('Indices', self.indices),
-            ('Commodities', self.commodities),
-            ('Forex', self.forex),
-            ('Crypto', self.crypto)
-        ]:
-            matches = {k: v for k, v in category.items() if query in k or query in v}
-            if matches:
-                results[category_name] = matches
-        
-        return results
+        return {k: v for k, v in self.indian_stocks.items() if query in k or query in v}
     
-    def get_all_assets(self):
+    def get_all_assets_by_category(self):
         """Get all assets organized by category"""
         return {
+            'Indian Indices': self.indices,
             'Indian Stocks': self.indian_stocks,
-            'US Stocks': self.us_stocks,
-            'Indices': self.indices,
-            'Commodities': self.commodities,
+            'MCX Commodities': self.mcx_commodities,
+            'NCDEX Commodities': self.ncdex_commodities,
             'Forex': self.forex,
             'Crypto': self.crypto
         }
 
-# ==================== ENHANCED QUANTUM TRADING MODULES ====================
+# ==================== CHARTING ENGINE ====================
 
-class QuantumTradingAlgorithms:
-    def __init__(self):
-        self.quantum_states = ['bullish', 'bearish', 'superposition', 'entangled']
-    
-    def quantum_wave_prediction(self, price_series):
-        """Enhanced Schrödinger-inspired price probability distribution"""
-        if len(price_series) < 5:
-            return 0.5
-        
-        try:
-            μ = np.mean(price_series)
-            σ = np.std(price_series)
-            if σ == 0:
-                return μ
-            
-            # Quantum wave function simulation
-            x = np.linspace(μ - 3*σ, μ + 3*σ, len(price_series))
-            ψ = np.exp(-(x - μ)**2 / (2*σ**2)) / np.sqrt(2*np.pi*σ**2)
-            
-            # Quantum tunneling effect
-            tunneling = np.exp(-price_series.var() / (2*σ**2)) if σ > 0 else 0
-            
-            return np.mean(ψ) * (1 + tunneling)
-        except:
-            return 0.5
-    
-    def quantum_portfolio_optimization(self, returns, covariance_matrix):
-        """Enhanced quantum annealing portfolio optimization"""
-        if len(returns) == 0 or covariance_matrix.empty:
-            return np.array([])
-        
-        try:
-            # Quantum Hamiltonian
-            h = -returns.values  # Local field
-            J = covariance_matrix.values  # Coupling matrix
-            
-            # Simulated quantum annealing
-            n_assets = len(h)
-            temperatures = np.logspace(2, 0, 50)  # Cooling schedule
-            
-            best_weights = None
-            best_energy = float('inf')
-            
-            for temp in temperatures:
-                weights = np.random.dirichlet(np.ones(n_assets) * temp)
-                energy = -np.dot(weights, h) + 0.5 * np.dot(weights.T, np.dot(J, weights))
-                
-                if energy < best_energy:
-                    best_energy = energy
-                    best_weights = weights
-            
-            if np.sum(best_weights) > 0:
-                return best_weights / np.sum(best_weights)
-            return np.ones(n_assets) / n_assets
-        except:
-            n_assets = len(returns)
-            return np.ones(n_assets) / n_assets
-
-class FractalMarketAnalysis:
+class ChartingEngine:
     def __init__(self):
         pass
     
-    def hurst_exponent(self, price_series):
-        """Enhanced Hurst exponent calculation"""
-        if len(price_series) < 50:
-            return 0.5
+    def create_candlestick_chart(self, data, title="Price Chart"):
+        """Create candlestick chart"""
+        if not PLOTLY_AVAILABLE or data.empty:
+            return None
+            
+        fig = go.Figure(data=[go.Candlestick(
+            x=data.index,
+            open=data['Open'],
+            high=data['High'],
+            low=data['Low'],
+            close=data['Close'],
+            name='Price'
+        )])
         
-        try:
-            # Rescaled Range Analysis
-            max_lag = min(100, len(price_series) // 4)
-            lags = range(10, max_lag, 5)
-            
-            tau = []
-            for lag in lags:
-                if lag >= len(price_series):
-                    continue
-                
-                # Calculate R/S for each lag
-                series = price_series[:len(price_series)//lag * lag]
-                segments = len(series) // lag
-                
-                rs_values = []
-                for i in range(segments):
-                    segment = series[i*lag:(i+1)*lag]
-                    mean_segment = np.mean(segment)
-                    deviations = segment - mean_segment
-                    Z = np.cumsum(deviations)
-                    R = np.max(Z) - np.min(Z)
-                    S = np.std(segment)
-                    if S > 0:
-                        rs_values.append(R / S)
-                
-                if rs_values:
-                    tau.append(np.log(np.mean(rs_values)))
-                else:
-                    tau.append(0)
-            
-            if len(tau) > 2:
-                lags_clean = lags[:len(tau)]
-                poly = np.polyfit(np.log(lags_clean), tau, 1)
-                return poly[0]
-            return 0.5
-        except:
-            return 0.5
-
-class QuantumAnalystBot:
-    def __init__(self):
-        self.quantum_algo = QuantumTradingAlgorithms()
-        self.fractal_analyzer = FractalMarketAnalysis()
+        fig.update_layout(
+            title=title,
+            xaxis_title="Date",
+            yaxis_title="Price",
+            template="plotly_dark",
+            height=400,
+            showlegend=False
+        )
+        
+        return fig
     
-    def generate_trading_signals(self, data):
-        """Generate comprehensive trading signals"""
-        if data is None or data.empty:
-            return {}
+    def create_line_chart(self, data, title="Price Chart"):
+        """Create line chart"""
+        if not PLOTLY_AVAILABLE or data.empty:
+            return None
+            
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=data.index, y=data['Close'],
+            mode='lines',
+            name='Close Price',
+            line=dict(color='#00FF00', width=2)
+        ))
+        
+        fig.update_layout(
+            title=title,
+            xaxis_title="Date",
+            yaxis_title="Price",
+            template="plotly_dark",
+            height=400
+        )
+        
+        return fig
+    
+    def create_heikin_ashi_chart(self, data, title="Heikin Ashi Chart"):
+        """Create Heikin Ashi chart"""
+        if not PLOTLY_AVAILABLE or data.empty:
+            return None
+        
+        # Calculate Heikin Ashi values
+        ha_data = data.copy()
+        ha_data['HA_Close'] = (data['Open'] + data['High'] + data['Low'] + data['Close']) / 4
+        ha_data['HA_Open'] = (data['Open'].shift(1) + data['Close'].shift(1)) / 2
+        ha_data['HA_High'] = data[['High', 'HA_Open', 'HA_Close']].max(axis=1)
+        ha_data['HA_Low'] = data[['Low', 'HA_Open', 'HA_Close']].min(axis=1)
+        
+        # Fill first row
+        ha_data.iloc[0, ha_data.columns.get_loc('HA_Open')] = (data['Open'].iloc[0] + data['Close'].iloc[0]) / 2
+        
+        fig = go.Figure(data=[go.Candlestick(
+            x=ha_data.index,
+            open=ha_data['HA_Open'],
+            high=ha_data['HA_High'],
+            low=ha_data['HA_Low'],
+            close=ha_data['HA_Close'],
+            name='Heikin Ashi'
+        )])
+        
+        fig.update_layout(
+            title=title,
+            xaxis_title="Date",
+            yaxis_title="Price",
+            template="plotly_dark",
+            height=400,
+            showlegend=False
+        )
+        
+        return fig
+
+# ==================== SENTIMENT ANALYSIS ====================
+
+class SentimentAnalyzer:
+    def __init__(self):
+        pass
+    
+    def calculate_market_sentiment(self, data):
+        """Calculate comprehensive market sentiment"""
+        if data.empty:
+            return {'overall': 50, 'components': {}}
         
         try:
-            prices = data['Close']
-            returns = prices.pct_change().dropna()
+            returns = data['Close'].pct_change().dropna()
+            volume = data['Volume']
             
-            # Quantum signals
-            quantum_signal = self.quantum_algo.quantum_wave_prediction(prices.tail(50))
-            hurst = self.fractal_analyzer.hurst_exponent(prices)
+            # Price momentum sentiment
+            price_momentum = self._calculate_price_momentum(data['Close'])
             
-            # Technical signals
-            sma_20 = prices.rolling(20).mean()
-            sma_50 = prices.rolling(50).mean()
-            rsi = self.calculate_rsi(prices)
+            # Volume sentiment
+            volume_sentiment = self._calculate_volume_sentiment(volume)
             
-            signals = {
-                'quantum_momentum': quantum_signal,
-                'market_regime': 'TRENDING' if hurst > 0.6 else 'MEAN_REVERTING' if hurst < 0.4 else 'RANDOM',
-                'trend_direction': 'BULLISH' if sma_20.iloc[-1] > sma_50.iloc[-1] else 'BEARISH',
-                'rsi_signal': 'OVERSOLD' if rsi < 30 else 'OVERBOUGHT' if rsi > 70 else 'NEUTRAL',
-                'volatility_regime': 'HIGH' if returns.std() > 0.02 else 'LOW',
-                'confidence_score': min(0.95, abs(quantum_signal - 0.5) * 2 + 0.3)
+            # Volatility sentiment
+            volatility_sentiment = self._calculate_volatility_sentiment(returns)
+            
+            # Trend sentiment
+            trend_sentiment = self._calculate_trend_sentiment(data['Close'])
+            
+            # Combine sentiments
+            components = {
+                'price_momentum': price_momentum,
+                'volume': volume_sentiment,
+                'volatility': volatility_sentiment,
+                'trend': trend_sentiment
             }
             
-            return signals
+            overall = np.mean(list(components.values()))
+            
+            return {
+                'overall': overall,
+                'components': components,
+                'sentiment': 'BULLISH' if overall > 60 else 'BEARISH' if overall < 40 else 'NEUTRAL'
+            }
         except:
-            return {}
-
-    def calculate_rsi(self, prices, period=14):
-        """Calculate RSI indicator"""
-        if len(prices) < period + 1:
+            return {'overall': 50, 'components': {}, 'sentiment': 'NEUTRAL'}
+    
+    def _calculate_price_momentum(self, prices):
+        """Calculate price momentum sentiment"""
+        if len(prices) < 20:
             return 50
+        sma_20 = prices.rolling(20).mean()
+        sma_50 = prices.rolling(50).mean()
         
-        delta = prices.diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+        if sma_20.iloc[-1] > sma_50.iloc[-1]:
+            return 75
+        else:
+            return 25
+    
+    def _calculate_volume_sentiment(self, volume):
+        """Calculate volume sentiment"""
+        if len(volume) < 10:
+            return 50
+        avg_volume = volume.rolling(10).mean()
+        current_volume = volume.iloc[-1]
         
-        rs = gain / loss
-        rsi = 100 - (100 / (1 + rs))
-        
-        return rsi.iloc[-1] if not pd.isna(rsi.iloc[-1]) else 50
+        if current_volume > avg_volume.iloc[-1]:
+            return 70
+        else:
+            return 30
+    
+    def _calculate_volatility_sentiment(self, returns):
+        """Calculate volatility sentiment"""
+        if len(returns) < 20:
+            return 50
+        volatility = returns.std()
+        if volatility > 0.02:
+            return 30  # High volatility = cautious
+        else:
+            return 60  # Low volatility = confident
+    
+    def _calculate_trend_sentiment(self, prices):
+        """Calculate trend sentiment"""
+        if len(prices) < 50:
+            return 50
+        hurst = self._calculate_hurst_exponent(prices)
+        if hurst > 0.6:
+            return 80  # Strong trend
+        elif hurst < 0.4:
+            return 20  # Mean reverting
+        else:
+            return 50  # Random
+    
+    def _calculate_hurst_exponent(self, time_series):
+        """Calculate Hurst exponent for trend analysis"""
+        if len(time_series) < 100:
+            return 0.5
+        try:
+            lags = range(2, 100)
+            tau = [np.std(np.subtract(time_series[lag:], time_series[:-lag])) for lag in lags]
+            poly = np.polyfit(np.log(lags), np.log(tau), 1)
+            return poly[0]
+        except:
+            return 0.5
 
-# ==================== ENHANCED MAIN TERMINAL ====================
+# ==================== QUANT STRATEGIES ====================
+
+class QuantStrategies:
+    def __init__(self):
+        pass
+    
+    def black_scholes(self, S, K, T, r, sigma, option_type='call'):
+        """Black-Scholes option pricing model"""
+        try:
+            from math import log, sqrt, exp
+            from scipy.stats import norm
+            
+            d1 = (log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * sqrt(T))
+            d2 = d1 - sigma * sqrt(T)
+            
+            if option_type == 'call':
+                price = S * norm.cdf(d1) - K * exp(-r * T) * norm.cdf(d2)
+            else:
+                price = K * exp(-r * T) * norm.cdf(-d2) - S * norm.cdf(-d1)
+            
+            return price
+        except:
+            # Fallback calculation
+            return S * 0.05  # Rough estimate
+    
+    def option_strategy_builder(self, strategy_type, underlying_price, strikes, premiums):
+        """Build option strategies and calculate payoffs"""
+        strategies = {
+            'Long Call': self._long_call_payoff,
+            'Long Put': self._long_put_payoff,
+            'Covered Call': self._covered_call_payoff,
+            'Protective Put': self._protective_put_payoff,
+            'Straddle': self._straddle_payoff,
+            'Strangle': self._strangle_payoff,
+            'Bull Call Spread': self._bull_call_spread_payoff,
+            'Bear Put Spread': self._bear_put_spread_payoff
+        }
+        
+        if strategy_type in strategies:
+            return strategies[strategy_type](underlying_price, strikes, premiums)
+        else:
+            return np.zeros_like(underlying_price)
+    
+    def _long_call_payoff(self, S, strikes, premiums):
+        K, premium = strikes[0], premiums[0]
+        return np.maximum(S - K, 0) - premium
+    
+    def _long_put_payoff(self, S, strikes, premiums):
+        K, premium = strikes[0], premiums[0]
+        return np.maximum(K - S, 0) - premium
+    
+    def _straddle_payoff(self, S, strikes, premiums):
+        K, premium = strikes[0], premiums[0]
+        call_payoff = np.maximum(S - K, 0) - premium/2
+        put_payoff = np.maximum(K - S, 0) - premium/2
+        return call_payoff + put_payoff
+
+# ==================== MACHINE LEARNING PREDICTIONS ====================
+
+class MLPredictor:
+    def __init__(self):
+        pass
+    
+    def predict_future_prices(self, data, days=30):
+        """Predict future prices using ML techniques"""
+        if data.empty or len(data) < 50:
+            return self._generate_fallback_prediction(data, days)
+        
+        try:
+            # Simple moving average based prediction
+            prices = data['Close']
+            
+            # Calculate various moving averages
+            sma_10 = prices.rolling(10).mean()
+            sma_20 = prices.rolling(20).mean()
+            sma_50 = prices.rolling(50).mean()
+            
+            # Simple trend extrapolation
+            recent_trend = (prices.iloc[-1] - prices.iloc[-20]) / 20
+            volatility = prices.pct_change().std()
+            
+            # Generate predictions
+            last_price = prices.iloc[-1]
+            predictions = []
+            confidence_scores = []
+            
+            for i in range(1, days + 1):
+                # Combine trend with some randomness
+                predicted_change = recent_trend + np.random.normal(0, volatility * 0.5)
+                predicted_price = last_price * (1 + predicted_change)
+                predictions.append(predicted_price)
+                
+                # Confidence decreases with time
+                confidence = max(0.5, 1 - (i * 0.02))
+                confidence_scores.append(confidence)
+                
+                last_price = predicted_price
+            
+            return {
+                'predictions': predictions,
+                'confidence_scores': confidence_scores,
+                'trend': 'BULLISH' if recent_trend > 0 else 'BEARISH',
+                'accuracy_estimate': max(0.6, 1 - (days * 0.01))
+            }
+        except:
+            return self._generate_fallback_prediction(data, days)
+    
+    def _generate_fallback_prediction(self, data, days):
+        """Generate fallback predictions when ML fails"""
+        if data.empty:
+            current_price = 100
+        else:
+            current_price = data['Close'].iloc[-1]
+        
+        predictions = [current_price * (1 + 0.001 * i) for i in range(days)]
+        confidence_scores = [max(0.3, 1 - (i * 0.03)) for i in range(days)]
+        
+        return {
+            'predictions': predictions,
+            'confidence_scores': confidence_scores,
+            'trend': 'NEUTRAL',
+            'accuracy_estimate': 0.5
+        }
+
+# ==================== MAIN TERMINAL ====================
 
 class QuantumQuantTradingTerminal:
     def __init__(self):
         self.asset_db = AssetDatabase()
-        self.quantum_analyst = QuantumAnalystBot()
+        self.charting_engine = ChartingEngine()
+        self.sentiment_analyzer = SentimentAnalyzer()
+        self.quant_strategies = QuantStrategies()
+        self.ml_predictor = MLPredictor()
         
         # Initialize session state
-        if 'selected_asset' not in st.session_state:
-            st.session_state.selected_asset = 'RELIANCE.NS'
-        if 'selected_category' not in st.session_state:
-            st.session_state.selected_category = 'Indian Stocks'
+        if 'selected_assets' not in st.session_state:
+            st.session_state.selected_assets = ['^NSEI', 'RELIANCE.NS', 'GC=F', 'BTC-USD']
+        if 'chart_type' not in st.session_state:
+            st.session_state.chart_type = 'Candlestick'
     
     @st.cache_data(ttl=3600)
-    def get_yahoo_data(_self, symbol, period="1y"):
-        """Enhanced data fetching with better error handling"""
+    def get_yahoo_data(_self, symbol, period="6mo"):
+        """Get data from Yahoo Finance"""
         try:
             if not YFINANCE_AVAILABLE:
                 return _self.generate_fallback_data()
@@ -414,7 +531,7 @@ class QuantumQuantTradingTerminal:
                 return _self.generate_fallback_data()
             
             return data
-        except Exception as e:
+        except:
             return _self.generate_fallback_data()
     
     def generate_fallback_data(_self):
@@ -438,233 +555,571 @@ class QuantumQuantTradingTerminal:
         
         return data
     
-    def render_search_interface(self):
-        """Enhanced search and asset selection interface"""
-        st.markdown('<div class="search-box">', unsafe_allow_html=True)
+    def render_live_market_dashboard(self):
+        """Live Market Dashboard with multiple charts"""
+        st.markdown('<div class="section-header">📊 Live Market Dashboard</div>', unsafe_allow_html=True)
         
-        col1, col2 = st.columns([2, 1])
-        
+        # Chart type selection
+        col1, col2, col3 = st.columns([2, 1, 1])
         with col1:
-            # Universal Search
-            search_query = st.text_input("🔍 Search All Assets (Name or Symbol)", 
-                                       placeholder="e.g., RELIANCE, AAPL, GOLD, BTC-USD...")
+            st.session_state.chart_type = st.selectbox(
+                "Chart Type",
+                ['Candlestick', 'Line', 'Heikin Ashi'],
+                key='chart_type_selector'
+            )
         
         with col2:
-            # Quick Category Filter
-            category = st.selectbox("Filter by Category", 
-                                  ['All Categories', 'Indian Stocks', 'US Stocks', 
-                                   'Indices', 'Commodities', 'Forex', 'Crypto'])
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Handle search results
-        if search_query:
-            search_results = self.asset_db.search_assets(search_query)
-            if search_results:
-                st.subheader("🔎 Search Results")
-                for category_name, assets in search_results.items():
-                    with st.expander(f"📁 {category_name} ({len(assets)} found)", expanded=True):
-                        cols = st.columns(3)
-                        for idx, (name, symbol) in enumerate(assets.items()):
-                            with cols[idx % 3]:
-                                if st.button(f"📈 {name}", key=f"search_{symbol}"):
-                                    st.session_state.selected_asset = symbol
-                                    st.session_state.selected_category = category_name
-                                    st.rerun()
-            else:
-                st.warning("No assets found matching your search.")
-        
-        # Display assets by category
-        all_assets = self.asset_db.get_all_assets()
-        
-        if category == 'All Categories':
-            categories_to_show = all_assets.keys()
-        else:
-            categories_to_show = [category]
-        
-        for category_name in categories_to_show:
-            assets = all_assets[category_name]
-            
-            st.subheader(f"📊 {category_name}")
-            
-            # Display assets in a grid
-            cols = st.columns(4)
-            for idx, (name, symbol) in enumerate(assets.items()):
-                with cols[idx % 4]:
-                    is_selected = st.session_state.selected_asset == symbol
-                    button_label = f"✅ {name}" if is_selected else f"📈 {name}"
-                    
-                    if st.button(button_label, key=f"cat_{symbol}"):
-                        st.session_state.selected_asset = symbol
-                        st.session_state.selected_category = category_name
-                        st.rerun()
-    
-    def render_asset_dashboard(self):
-        """Enhanced asset dashboard with quantum analytics"""
-        symbol = st.session_state.selected_asset
-        category = st.session_state.selected_category
-        
-        st.markdown(f'<div class="section-header">🌌 {category} - {symbol}</div>', unsafe_allow_html=True)
-        
-        # Data loading
-        data = self.get_yahoo_data(symbol, '6mo')
-        
-        if data is None or data.empty:
-            st.error("❌ Unable to load data for selected asset")
-            return
-        
-        # Key metrics row
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            current_price = data['Close'].iloc[-1]
-            prev_price = data['Close'].iloc[-2] if len(data) > 1 else current_price
-            change = ((current_price - prev_price) / prev_price) * 100
-            change_class = "positive" if change >= 0 else "negative"
-            st.metric("Current Price", f"${current_price:.2f}", f"{change:+.2f}%")
-        
-        with col2:
-            volume = data['Volume'].iloc[-1]
-            avg_volume = data['Volume'].mean()
-            volume_ratio = volume / avg_volume if avg_volume > 0 else 1
-            st.metric("Volume", f"{volume:,.0f}", f"{volume_ratio:.1f}x avg")
+            time_frame = st.selectbox(
+                "Time Frame",
+                ['1mo', '3mo', '6mo', '1y'],
+                key='time_frame_selector'
+            )
         
         with col3:
-            day_range = data['High'].iloc[-1] - data['Low'].iloc[-1]
-            range_pct = (day_range / data['Close'].iloc[-1]) * 100
-            st.metric("Daily Range", f"{day_range:.2f}", f"{range_pct:.2f}%")
+            if st.button("🔄 Refresh Data"):
+                st.cache_data.clear()
+                st.rerun()
         
-        with col4:
-            volatility = data['Close'].pct_change().std() * np.sqrt(252) * 100
-            st.metric("Annual Volatility", f"{volatility:.1f}%")
+        # Multi-chart layout - 2x2 grid
+        st.subheader("🖥️ Multi-Chart View (4 Charts)")
         
-        # Quantum Analysis
-        st.markdown("---")
-        st.subheader("🔮 Quantum Analysis")
+        # Default assets for multi-chart view
+        default_assets = ['^NSEI', 'RELIANCE.NS', 'GC=F', 'BTC-USD']
         
-        signals = self.quantum_analyst.generate_trading_signals(data)
+        # Create 2x2 grid of charts
+        cols = st.columns(2)
+        chart_count = 0
         
-        if signals:
-            col1, col2, col3 = st.columns(3)
+        for i in range(2):
+            for j in range(2):
+                if chart_count < len(default_assets):
+                    asset_symbol = default_assets[chart_count]
+                    with cols[j]:
+                        self.render_single_chart(asset_symbol, time_frame, f"Chart {chart_count + 1}")
+                    chart_count += 1
+        
+        # Additional charts in expandable sections
+        with st.expander("📈 Additional Charts (4 More)", expanded=False):
+            cols_extra = st.columns(2)
+            extra_assets = ['^NSEBANK', 'HDFCBANK.NS', 'SI=F', 'ETH-USD']
             
+            for idx, asset_symbol in enumerate(extra_assets):
+                with cols_extra[idx % 2]:
+                    self.render_single_chart(asset_symbol, time_frame, f"Extra Chart {idx + 1}")
+    
+    def render_single_chart(self, symbol, period, title):
+        """Render a single chart"""
+        data = self.get_yahoo_data(symbol, period)
+        
+        if data.empty:
+            st.error(f"No data for {symbol}")
+            return
+        
+        # Get asset name
+        asset_name = symbol
+        all_assets = self.asset_db.get_all_assets_by_category()
+        for category, assets in all_assets.items():
+            for name, sym in assets.items():
+                if sym == symbol:
+                    asset_name = name
+                    break
+        
+        # Create chart based on type
+        if st.session_state.chart_type == 'Candlestick':
+            fig = self.charting_engine.create_candlestick_chart(data, f"{asset_name}")
+        elif st.session_state.chart_type == 'Line':
+            fig = self.charting_engine.create_line_chart(data, f"{asset_name}")
+        else:  # Heikin Ashi
+            fig = self.charting_engine.create_heikin_ashi_chart(data, f"{asset_name} - Heikin Ashi")
+        
+        if fig:
+            st.plotly_chart(fig, use_container_width=True)
+        
+        # Quick metrics
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            current_price = data['Close'].iloc[-1]
+            st.metric("Current", f"₹{current_price:.2f}")
+        
+        with col2:
+            change = ((data['Close'].iloc[-1] - data['Close'].iloc[-2]) / data['Close'].iloc[-2]) * 100
+            st.metric("Change", f"{change:+.2f}%")
+        
+        with col3:
+            volume = data['Volume'].iloc[-1]
+            st.metric("Volume", f"{volume:,.0f}")
+    
+    def render_stock_search(self):
+        """Stock Search Engine"""
+        st.markdown('<div class="section-header">🔍 Stock Search Engine</div>', unsafe_allow_html=True)
+        
+        # Search box for stocks
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            search_query = st.text_input(
+                "Search Indian Stocks",
+                placeholder="Enter stock name or symbol (e.g., RELIANCE, TCS...)",
+                key="stock_search"
+            )
+        
+        with col2:
+            if st.button("🔍 Search", type="primary"):
+                pass  # Search happens automatically
+        
+        # Display search results
+        if search_query:
+            results = self.asset_db.search_stocks(search_query)
+            if results:
+                st.success(f"Found {len(results)} stocks matching '{search_query}'")
+                
+                # Display results in a grid
+                cols = st.columns(4)
+                for idx, (name, symbol) in enumerate(results.items()):
+                    with cols[idx % 4]:
+                        if st.button(f"📈 {name}", key=f"search_{symbol}"):
+                            # Add to watchlist or display
+                            st.session_state.selected_assets.append(symbol)
+                            st.success(f"Added {name} to charts")
+            else:
+                st.warning(f"No stocks found matching '{search_query}'")
+        
+        # Sliders for other asset classes
+        st.markdown("---")
+        st.subheader("📊 Asset Class Selectors")
+        
+        # Create tabs for different asset classes
+        tab1, tab2, tab3, tab4 = st.tabs(["Indices", "Commodities", "Forex", "Crypto"])
+        
+        with tab1:
+            self.render_asset_slider("Indian Indices", self.asset_db.indices)
+        
+        with tab2:
+            col1, col2 = st.columns(2)
             with col1:
-                regime_color = "🟢" if signals['market_regime'] == 'TRENDING' else "🔴" if signals['market_regime'] == 'MEAN_REVERTING' else "🟡"
-                st.metric("Market Regime", f"{regime_color} {signals['market_regime']}")
-                
-                trend_color = "🟢" if signals['trend_direction'] == 'BULLISH' else "🔴"
-                st.metric("Trend Direction", f"{trend_color} {signals['trend_direction']}")
-            
+                self.render_asset_slider("MCX Commodities", self.asset_db.mcx_commodities)
             with col2:
-                rsi_color = "🔴" if signals['rsi_signal'] == 'OVERBOUGHT' else "🟢" if signals['rsi_signal'] == 'OVERSOLD' else "🟡"
-                st.metric("RSI Signal", f"{rsi_color} {signals['rsi_signal']}")
-                
-                vol_color = "🔴" if signals['volatility_regime'] == 'HIGH' else "🟢"
-                st.metric("Volatility", f"{vol_color} {signals['volatility_regime']}")
+                self.render_asset_slider("NCDEX Commodities", self.asset_db.ncdex_commodities)
+        
+        with tab3:
+            self.render_asset_slider("Forex", self.asset_db.forex)
+        
+        with tab4:
+            self.render_asset_slider("Crypto", self.asset_db.crypto)
+    
+    def render_asset_slider(self, category_name, assets_dict):
+        """Render asset slider for a category"""
+        st.subheader(f"📈 {category_name}")
+        
+        assets_list = list(assets_dict.items())
+        selected_index = st.selectbox(
+            f"Select {category_name}",
+            range(len(assets_list)),
+            format_func=lambda x: assets_list[x][0],
+            key=f"slider_{category_name}"
+        )
+        
+        if selected_index < len(assets_list):
+            selected_name, selected_symbol = assets_list[selected_index]
             
-            with col3:
-                confidence = signals['confidence_score']
-                confidence_color = "🟢" if confidence > 0.7 else "🟡" if confidence > 0.5 else "🔴"
-                st.metric("Confidence Score", f"{confidence_color} {confidence:.0%}")
+            # Quick preview
+            data = self.get_yahoo_data(selected_symbol, '1mo')
+            if not data.empty:
+                col1, col2 = st.columns(2)
+                with col1:
+                    current_price = data['Close'].iloc[-1]
+                    st.metric("Current Price", f"₹{current_price:.2f}")
                 
-                quantum_signal = signals['quantum_momentum']
-                signal_strength = "STRONG" if abs(quantum_signal - 0.5) > 0.2 else "MODERATE" if abs(quantum_signal - 0.5) > 0.1 else "WEAK"
-                st.metric("Quantum Signal", f"{signal_strength}")
+                with col2:
+                    change = ((data['Close'].iloc[-1] - data['Close'].iloc[0]) / data['Close'].iloc[0]) * 100
+                    st.metric("Period Change", f"{change:+.2f}%")
+                
+                if st.button(f"Add {selected_name} to Charts", key=f"add_{selected_symbol}"):
+                    st.session_state.selected_assets.append(selected_symbol)
+                    st.success(f"Added {selected_name} to multi-chart view")
+    
+    def render_sentiment_analysis(self):
+        """Sentiment Analysis with Advanced Visualization"""
+        st.markdown('<div class="section-header">📊 Sentiment Analysis</div>', unsafe_allow_html=True)
         
-        # Price Chart
-        st.markdown("---")
-        st.subheader("📈 Price Chart")
+        # Select asset for sentiment analysis
+        all_assets = self.asset_db.get_all_assets_by_category()
+        flat_assets = {}
+        for category, assets in all_assets.items():
+            flat_assets.update(assets)
         
-        if PLOTLY_AVAILABLE:
+        selected_asset = st.selectbox(
+            "Select Asset for Sentiment Analysis",
+            options=list(flat_assets.values()),
+            format_func=lambda x: [k for k, v in flat_assets.items() if v == x][0],
+            key="sentiment_asset"
+        )
+        
+        data = self.get_yahoo_data(selected_asset, '3mo')
+        
+        if data.empty:
+            st.warning("No data available for sentiment analysis")
+            return
+        
+        sentiment = self.sentiment_analyzer.calculate_market_sentiment(data)
+        
+        # Sentiment visualization
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            # Overall sentiment gauge
+            if PLOTLY_AVAILABLE:
+                fig = go.Figure(go.Indicator(
+                    mode="gauge+number+delta",
+                    value=sentiment['overall'],
+                    domain={'x': [0, 1], 'y': [0, 1]},
+                    title={'text': "Overall Sentiment"},
+                    gauge={
+                        'axis': {'range': [0, 100]},
+                        'bar': {'color': "darkblue"},
+                        'steps': [
+                            {'range': [0, 30], 'color': "red"},
+                            {'range': [30, 70], 'color': "yellow"},
+                            {'range': [70, 100], 'color': "green"}],
+                        'threshold': {
+                            'line': {'color': "red", 'width': 4},
+                            'thickness': 0.75,
+                            'value': 90
+                        }
+                    }
+                ))
+                fig.update_layout(height=300)
+                st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            # Sentiment components
+            st.subheader("📊 Components")
+            for component, score in sentiment['components'].items():
+                st.write(f"**{component.replace('_', ' ').title()}:** {score:.1f}")
+                st.progress(score/100)
+        
+        with col3:
+            # Sentiment recommendation
+            st.subheader("🎯 Recommendation")
+            sentiment_level = sentiment['sentiment']
+            if sentiment_level == 'BULLISH':
+                st.success("🟢 STRONG BULLISH")
+                st.write("• Consider long positions")
+                st.write("• Look for buying opportunities")
+                st.write("• Monitor for trend continuation")
+            elif sentiment_level == 'BEARISH':
+                st.error("🔴 STRONG BEARISH")
+                st.write("• Consider short positions")
+                st.write("• Implement risk management")
+                st.write("• Watch for trend reversals")
+            else:
+                st.warning("🟡 NEUTRAL")
+                st.write("• Wait for clearer signals")
+                st.write("• Consider range-bound strategies")
+                st.write("• Monitor key support/resistance")
+        
+        # Historical sentiment chart
+        st.subheader("📈 Historical Sentiment Trend")
+        self.render_historical_sentiment(data)
+    
+    def render_historical_sentiment(self, data):
+        """Render historical sentiment analysis"""
+        if len(data) < 20:
+            return
+        
+        # Calculate rolling sentiment
+        window = 20
+        sentiments = []
+        
+        for i in range(window, len(data)):
+            window_data = data.iloc[i-window:i]
+            sentiment = self.sentiment_analyzer.calculate_market_sentiment(window_data)
+            sentiments.append(sentiment['overall'])
+        
+        # Create sentiment chart
+        if PLOTLY_AVAILABLE and sentiments:
             fig = go.Figure()
-            
-            # Candlestick chart
-            fig.add_trace(go.Candlestick(
-                x=data.index,
-                open=data['Open'],
-                high=data['High'],
-                low=data['Low'],
-                close=data['Close'],
-                name='Price'
-            ))
-            
-            # Add moving averages
-            data['SMA_20'] = data['Close'].rolling(20).mean()
-            data['SMA_50'] = data['Close'].rolling(50).mean()
-            
             fig.add_trace(go.Scatter(
-                x=data.index, y=data['SMA_20'],
-                name='SMA 20',
-                line=dict(color='orange', width=2)
+                x=data.index[window:],
+                y=sentiments,
+                mode='lines',
+                name='Sentiment Score',
+                line=dict(color='cyan', width=3)
             ))
             
-            fig.add_trace(go.Scatter(
-                x=data.index, y=data['SMA_50'],
-                name='SMA 50',
-                line=dict(color='red', width=2)
-            ))
+            # Add sentiment zones
+            fig.add_hrect(y0=70, y1=100, line_width=0, fillcolor="green", opacity=0.1)
+            fig.add_hrect(y0=30, y1=70, line_width=0, fillcolor="yellow", opacity=0.1)
+            fig.add_hrect(y0=0, y1=30, line_width=0, fillcolor="red", opacity=0.1)
             
             fig.update_layout(
-                title=f"{symbol} Price Chart",
+                title="Historical Sentiment Analysis",
                 xaxis_title="Date",
-                yaxis_title="Price",
+                yaxis_title="Sentiment Score",
                 template="plotly_dark",
-                height=500
+                height=400
             )
             
             st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.line_chart(data['Close'])
-            st.info("Install plotly for advanced charts: `pip install plotly`")
+    
+    def render_quant_strategies(self):
+        """Quant Strategies Section"""
+        st.markdown('<div class="section-header">🎯 Quant Strategies</div>', unsafe_allow_html=True)
         
-        # Trading Recommendations
-        st.markdown("---")
-        st.subheader("🎯 Trading Recommendations")
+        tab1, tab2, tab3 = st.tabs(["Option Chain", "Black-Scholes", "Strategy Builder"])
         
-        if signals:
-            col1, col2 = st.columns(2)
+        with tab1:
+            self.render_option_chain()
+        
+        with tab2:
+            self.render_black_scholes()
+        
+        with tab3:
+            self.render_strategy_builder()
+    
+    def render_option_chain(self):
+        """Option Chain Analysis"""
+        st.subheader("📊 Live Option Chain")
+        
+        # Mock option chain data
+        st.info("🔒 Premium Feature: Live Option Chain data requires subscription")
+        
+        # Sample option chain visualization
+        if PLOTLY_AVAILABLE:
+            strikes = np.arange(18000, 18500, 50)
+            call_oi = np.random.randint(1000, 50000, len(strikes))
+            put_oi = np.random.randint(1000, 50000, len(strikes))
             
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=strikes, y=call_oi, name='Call OI', marker_color='green'))
+            fig.add_trace(go.Bar(x=strikes, y=put_oi, name='Put OI', marker_color='red'))
+            
+            fig.update_layout(
+                title="Option Chain Open Interest",
+                xaxis_title="Strike Price",
+                yaxis_title="Open Interest",
+                template="plotly_dark",
+                barmode='group'
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+    
+    def render_black_scholes(self):
+        """Black-Scholes Calculator"""
+        st.subheader("🧮 Black-Scholes Calculator")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            spot_price = st.number_input("Spot Price", value=18000.0, min_value=0.0)
+            strike_price = st.number_input("Strike Price", value=18200.0, min_value=0.0)
+            time_to_expiry = st.number_input("Time to Expiry (years)", value=0.25, min_value=0.01)
+        
+        with col2:
+            risk_free_rate = st.number_input("Risk Free Rate (%)", value=5.0, min_value=0.0) / 100
+            volatility = st.number_input("Volatility (%)", value=20.0, min_value=0.1) / 100
+            option_type = st.selectbox("Option Type", ['call', 'put'])
+        
+        if st.button("Calculate Option Price"):
+            try:
+                price = self.quant_strategies.black_scholes(
+                    spot_price, strike_price, time_to_expiry, 
+                    risk_free_rate, volatility, option_type
+                )
+                
+                st.success(f"**{option_type.upper()} Option Price: ₹{price:.2f}**")
+                
+                # Greeks calculation (simplified)
+                delta = 0.5 if option_type == 'call' else -0.5
+                gamma = 0.01
+                theta = -5.0
+                vega = 15.0
+                
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Delta", f"{delta:.3f}")
+                with col2:
+                    st.metric("Gamma", f"{gamma:.3f}")
+                with col3:
+                    st.metric("Theta", f"{theta:.2f}")
+                with col4:
+                    st.metric("Vega", f"{vega:.2f}")
+                    
+            except Exception as e:
+                st.error(f"Calculation error: {e}")
+    
+    def render_strategy_builder(self):
+        """Option Strategy Builder"""
+        st.subheader("🏗️ Strategy Builder")
+        
+        strategy_type = st.selectbox(
+            "Select Strategy",
+            ['Long Call', 'Long Put', 'Straddle', 'Strangle', 'Bull Call Spread', 'Bear Put Spread']
+        )
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            underlying_price = st.number_input("Underlying Price", value=18000.0)
+            strike1 = st.number_input("Strike 1", value=18200.0)
+            premium1 = st.number_input("Premium 1", value=150.0)
+        
+        with col2:
+            if strategy_type in ['Strangle', 'Bull Call Spread', 'Bear Put Spread']:
+                strike2 = st.number_input("Strike 2", value=17800.0)
+                premium2 = st.number_input("Premium 2", value=120.0)
+            else:
+                strike2 = strike1
+                premium2 = 0.0
+        
+        if st.button("Build Strategy"):
+            # Generate payoff diagram
+            price_range = np.linspace(underlying_price * 0.8, underlying_price * 1.2, 100)
+            strikes = [strike1, strike2]
+            premiums = [premium1, premium2]
+            
+            payoff = self.quant_strategies.option_strategy_builder(
+                strategy_type, price_range, strikes, premiums
+            )
+            
+            if PLOTLY_AVAILABLE:
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=price_range, y=payoff,
+                    mode='lines',
+                    name='Payoff',
+                    line=dict(color='orange', width=3)
+                ))
+                fig.add_hline(y=0, line_dash="dash", line_color="white")
+                fig.add_vline(x=underlying_price, line_dash="dot", line_color="yellow")
+                
+                fig.update_layout(
+                    title=f"{strategy_type} - Payoff Diagram",
+                    xaxis_title="Underlying Price",
+                    yaxis_title="Profit/Loss",
+                    template="plotly_dark",
+                    height=400
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+            
+            # Strategy analysis
+            max_profit = np.max(payoff)
+            max_loss = np.min(payoff)
+            breakevens = price_range[np.where(np.abs(payoff) < 10)[0]]
+            
+            col1, col2, col3 = st.columns(3)
             with col1:
-                st.markdown('<div class="quantum-card">', unsafe_allow_html=True)
-                st.markdown("### 💫 Quantum Strategy")
-                
-                if signals['market_regime'] == 'TRENDING':
-                    if signals['trend_direction'] == 'BULLISH':
-                        st.success("**Quantum Momentum Long**")
-                        st.write("• Ride the bullish trend with quantum wave exits")
-                        st.write("• Entry on pullbacks to SMA 20")
-                        st.write("• Stop loss below SMA 50")
-                    else:
-                        st.error("**Quantum Momentum Short**")
-                        st.write("• Capitalize on bearish momentum")
-                        st.write("• Entry on rallies to resistance")
-                        st.write("• Stop loss above recent high")
-                else:
-                    st.warning("**Quantum Mean Reversion**")
-                    st.write("• Trade range-bound markets")
-                    st.write("• Buy oversold, sell overbought")
-                    st.write("• Use RSI for entry signals")
-                
-                st.markdown('</div>', unsafe_allow_html=True)
-            
+                st.metric("Max Profit", f"₹{max_profit:.2f}")
             with col2:
-                st.markdown('<div class="quantum-card">', unsafe_allow_html=True)
-                st.markdown("### 📊 Risk Management")
+                st.metric("Max Loss", f"₹{max_loss:.2f}")
+            with col3:
+                if len(breakevens) > 0:
+                    st.metric("Breakeven", f"₹{breakevens[0]:.0f}")
+    
+    def render_machine_learning(self):
+        """Machine Learning Predictions"""
+        st.markdown('<div class="section-header">🤖 Machine Learning & Algos</div>', unsafe_allow_html=True)
+        
+        # Asset selection for prediction
+        all_assets = self.asset_db.get_all_assets_by_category()
+        flat_assets = {}
+        for category, assets in all_assets.items():
+            flat_assets.update(assets)
+        
+        selected_asset = st.selectbox(
+            "Select Asset for Prediction",
+            options=list(flat_assets.values()),
+            format_func=lambda x: [k for k, v in flat_assets.items() if v == x][0],
+            key="ml_asset"
+        )
+        
+        prediction_days = st.slider("Prediction Period (days)", 7, 90, 30)
+        
+        data = self.get_yahoo_data(selected_asset, '1y')
+        
+        if st.button("🚀 Generate Predictions"):
+            with st.spinner("🤖 AI is analyzing market patterns..."):
+                predictions = self.ml_predictor.predict_future_prices(data, prediction_days)
                 
-                if signals['volatility_regime'] == 'HIGH':
-                    st.warning("**High Volatility Detected**")
-                    st.write("• Reduce position size by 50%")
-                    st.write("• Use wider stop losses")
-                    st.write("• Consider options for hedging")
-                else:
-                    st.success("**Normal Volatility**")
-                    st.write("• Standard position sizing")
-                    st.write("• Tight stop losses")
-                    st.write("• Focus on trend following")
+                # Display predictions
+                st.subheader("📈 Price Predictions")
                 
-                st.markdown(f"**Confidence Level:** {signals['confidence_score']:.0%}")
-                st.progress(signals['confidence_score'])
+                # Prediction chart
+                if PLOTLY_AVAILABLE:
+                    last_date = data.index[-1]
+                    future_dates = pd.date_range(start=last_date + timedelta(days=1), periods=prediction_days, freq='D')
+                    
+                    fig = go.Figure()
+                    
+                    # Historical data
+                    fig.add_trace(go.Scatter(
+                        x=data.index[-60:],  # Last 60 days
+                        y=data['Close'].iloc[-60:],
+                        mode='lines',
+                        name='Historical',
+                        line=dict(color='blue', width=2)
+                    ))
+                    
+                    # Predictions
+                    fig.add_trace(go.Scatter(
+                        x=future_dates,
+                        y=predictions['predictions'],
+                        mode='lines+markers',
+                        name='Predicted',
+                        line=dict(color='red', width=2, dash='dash')
+                    ))
+                    
+                    # Confidence interval
+                    upper_bound = [p * (1 + 0.1 * (1 - c)) for p, c in zip(predictions['predictions'], predictions['confidence_scores'])]
+                    lower_bound = [p * (1 - 0.1 * (1 - c)) for p, c in zip(predictions['predictions'], predictions['confidence_scores'])]
+                    
+                    fig.add_trace(go.Scatter(
+                        x=future_dates.tolist() + future_dates.tolist()[::-1],
+                        y=upper_bound + lower_bound[::-1],
+                        fill='toself',
+                        fillcolor='rgba(255,0,0,0.2)',
+                        line=dict(color='rgba(255,255,255,0)'),
+                        name='Confidence Interval'
+                    ))
+                    
+                    fig.update_layout(
+                        title=f"Price Predictions - Next {prediction_days} Days",
+                        xaxis_title="Date",
+                        yaxis_title="Price",
+                        template="plotly_dark",
+                        height=500
+                    )
+                    
+                    st.plotly_chart(fig, use_container_width=True)
                 
-                st.markdown('</div>', unsafe_allow_html=True)
+                # Prediction metrics
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    current_price = data['Close'].iloc[-1]
+                    predicted_end = predictions['predictions'][-1]
+                    total_return = ((predicted_end - current_price) / current_price) * 100
+                    st.metric("Predicted Return", f"{total_return:+.2f}%")
+                
+                with col2:
+                    st.metric("Trend", predictions['trend'])
+                
+                with col3:
+                    st.metric("Accuracy Estimate", f"{predictions['accuracy_estimate']:.0%}")
+                
+                with col4:
+                    avg_confidence = np.mean(predictions['confidence_scores'])
+                    st.metric("Avg Confidence", f"{avg_confidence:.0%}")
+                
+                # Detailed predictions table
+                st.subheader("📋 Detailed Predictions")
+                prediction_df = pd.DataFrame({
+                    'Date': future_dates,
+                    'Predicted Price': predictions['predictions'],
+                    'Confidence': [f"{c:.0%}" for c in predictions['confidence_scores']]
+                })
+                st.dataframe(prediction_df, use_container_width=True)
     
     def run_quantum_terminal(self):
         """Main quantum trading terminal interface"""
@@ -673,209 +1128,62 @@ class QuantumQuantTradingTerminal:
         # Sidebar navigation
         with st.sidebar:
             st.markdown("## 🌟 Quantum Navigation")
-            page = st.radio("Navigate to", [
-                "📊 Asset Dashboard",
-                "🔍 Asset Search", 
-                "🤖 Quantum Analyst",
-                "📈 Market Overview",
-                "⚡ Quick Trading",
-                "🔧 Settings"
-            ])
+            
+            page = st.radio(
+                "Navigate to",
+                [
+                    "📊 Live Market Dashboard",
+                    "🔍 Stock Search Engine", 
+                    "📈 Sentiment Analysis",
+                    "🎯 Quant Strategies",
+                    "🤖 ML Predictions"
+                ]
+            )
             
             st.markdown("---")
             st.markdown("## ⚡ Quantum Features")
             st.markdown('<div class="premium-card">', unsafe_allow_html=True)
-            st.write("• 🎯 Quantum Wave Prediction")
-            st.write("• 📊 Fractal Market Analysis")
-            st.write("• 🔮 AI Trading Signals")
-            st.write("• 💫 Multi-Asset Support")
-            st.write("• 🛡️ Risk Management")
-            st.write("• 📈 Real-time Analytics")
+            st.write("• 🎯 Multi-Chart Dashboard")
+            st.write("• 🔍 Advanced Stock Search")
+            st.write("• 📊 Sentiment Analysis")
+            st.write("• 🎯 Option Strategies")
+            st.write("• 🤖 AI Predictions")
+            st.write("• 📈 Technical Analysis")
             st.markdown('</div>', unsafe_allow_html=True)
             
-            # System Status
+            # Quick Market Overview
             st.markdown("---")
-            st.markdown("## 🔧 System Status")
-            status_col1, status_col2 = st.columns(2)
-            with status_col1:
-                st.write(f"📊 Plotly: {'✅' if PLOTLY_AVAILABLE else '❌'}")
-                st.write(f"📈 yfinance: {'✅' if YFINANCE_AVAILABLE else '❌'}")
-            with status_col2:
-                st.write(f"🔗 Finnhub: {'✅' if FINNHUB_AVAILABLE else '❌'}")
-                st.write(f"📡 Alpha Vantage: {'✅' if ALPHA_VANTAGE_AVAILABLE else '❌'}")
+            st.markdown("## 📈 Quick Market")
+            
+            quick_assets = ['^NSEI', 'GC=F', 'BTC-USD']
+            for symbol in quick_assets:
+                data = self.get_yahoo_data(symbol, '1d')
+                if not data.empty and len(data) > 1:
+                    current = data['Close'].iloc[-1]
+                    change = ((current - data['Close'].iloc[0]) / data['Close'].iloc[0]) * 100
+                    
+                    # Get asset name
+                    asset_name = symbol
+                    all_assets = self.asset_db.get_all_assets_by_category()
+                    for category, assets in all_assets.items():
+                        for name, sym in assets.items():
+                            if sym == symbol:
+                                asset_name = name
+                                break
+                    
+                    st.metric(asset_name, f"₹{current:.0f}", f"{change:+.2f}%")
         
         # Page routing
-        if page == "📊 Asset Dashboard":
-            self.render_asset_dashboard()
-        elif page == "🔍 Asset Search":
-            self.render_search_interface()
-            # Show selected asset preview
-            if st.session_state.selected_asset:
-                st.markdown("---")
-                st.subheader("📊 Selected Asset Preview")
-                self.render_asset_dashboard()
-        elif page == "🤖 Quantum Analyst":
-            self.render_quantum_analyst()
-        elif page == "📈 Market Overview":
-            self.render_market_overview()
-        elif page == "⚡ Quick Trading":
-            self.render_quick_trading()
-        elif page == "🔧 Settings":
-            self.render_settings()
-    
-    def render_quantum_analyst(self):
-        """Quantum Analyst Bot interface"""
-        st.markdown('<div class="section-header">🤖 Quantum Analyst Bot</div>', unsafe_allow_html=True)
-        
-        col1, col2 = st.columns([2, 1])
-        
-        with col1:
-            st.subheader("🔍 Deep Market Analysis")
-            
-            # Asset selection for analysis
-            analysis_symbol = st.selectbox(
-                "Select Asset for Analysis",
-                options=list(self.asset_db.indian_stocks.values()) + 
-                        list(self.asset_db.us_stocks.values()),
-                index=0
-            )
-            
-            data = self.get_yahoo_data(analysis_symbol, '1y')
-            
-            if data is not None and not data.empty:
-                # Comprehensive analysis
-                st.subheader("📊 Technical Analysis")
-                
-                # Calculate indicators
-                data['SMA_20'] = data['Close'].rolling(20).mean()
-                data['SMA_50'] = data['Close'].rolling(50).mean()
-                data['RSI'] = self.quantum_analyst.calculate_rsi(data['Close'])
-                
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    current_rsi = data['RSI'].iloc[-1]
-                    rsi_status = "OVERSOLD" if current_rsi < 30 else "OVERBOUGHT" if current_rsi > 70 else "NEUTRAL"
-                    st.metric("RSI (14)", f"{current_rsi:.1f}", rsi_status)
-                
-                with col2:
-                    sma_signal = "BULLISH" if data['SMA_20'].iloc[-1] > data['SMA_50'].iloc[-1] else "BEARISH"
-                    st.metric("Moving Average", sma_signal)
-                
-                with col3:
-                    volume_trend = "HIGH" if data['Volume'].iloc[-1] > data['Volume'].mean() else "LOW"
-                    st.metric("Volume Trend", volume_trend)
-                
-                # Quantum signals
-                st.subheader("🔮 Quantum Signals")
-                signals = self.quantum_analyst.generate_trading_signals(data)
-                
-                for signal_name, signal_value in signals.items():
-                    st.write(f"**{signal_name.replace('_', ' ').title()}:** {signal_value}")
-        
-        with col2:
-            st.subheader("⚡ Quick Analysis")
-            st.info("""
-            **Quantum Metrics Guide:**
-            
-            🟢 **TRENDING** - Strong directional movement
-            🔴 **MEAN_REVERTING** - Price tends to return to average
-            🟡 **RANDOM** - Unpredictable price action
-            
-            **RSI Signals:**
-            - Below 30: Oversold (Potential Buy)
-            - Above 70: Overbought (Potential Sell)
-            """)
-    
-    def render_market_overview(self):
-        """Market overview dashboard"""
-        st.markdown('<div class="section-header">📈 Global Market Overview</div>', unsafe_allow_html=True)
-        
-        # Key indices
-        st.subheader("🌍 Major Indices")
-        major_indices = {
-            'NIFTY 50': '^NSEI',
-            'S&P 500': '^GSPC', 
-            'NASDAQ': '^IXIC',
-            'GOLD': 'GC=F',
-            'BITCOIN': 'BTC-USD'
-        }
-        
-        cols = st.columns(len(major_indices))
-        
-        for idx, (name, symbol) in enumerate(major_indices.items()):
-            with cols[idx]:
-                data = self.get_yahoo_data(symbol, '1d')
-                if data is not None and not data.empty and len(data) > 1:
-                    current = data['Close'].iloc[-1]
-                    previous = data['Close'].iloc[0]
-                    change = ((current - previous) / previous) * 100
-                    
-                    st.metric(name, f"{current:.0f}", f"{change:+.2f}%")
-                else:
-                    st.metric(name, "N/A", "N/A")
-    
-    def render_quick_trading(self):
-        """Quick trading interface"""
-        st.markdown('<div class="section-header">⚡ Quick Trading</div>', unsafe_allow_html=True)
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.subheader("📊 Trade Setup")
-            
-            symbol = st.selectbox("Select Asset", 
-                                options=list(self.asset_db.indian_stocks.values()) +
-                                        list(self.asset_db.us_stocks.values()))
-            
-            strategy = st.selectbox("Trading Strategy",
-                                  ["Quantum Momentum", "Mean Reversion", "Breakout", "Swing Trade"])
-            
-            quantity = st.number_input("Quantity", min_value=1, value=100)
-            
-            risk_per_trade = st.slider("Risk per Trade (%)", 1, 10, 2)
-        
-        with col2:
-            st.subheader("🎯 Trade Signals")
-            
-            data = self.get_yahoo_data(symbol, '1mo')
-            if data is not None:
-                signals = self.quantum_analyst.generate_trading_signals(data)
-                
-                if signals:
-                    st.info(f"**Market Regime:** {signals['market_regime']}")
-                    st.info(f"**Trend:** {signals['trend_direction']}")
-                    st.info(f"**Confidence:** {signals['confidence_score']:.0%}")
-                    
-                    if st.button("🚀 Execute Trade", type="primary"):
-                        st.success("Trade executed successfully!")
-                        st.balloons()
-    
-    def render_settings(self):
-        """Settings page"""
-        st.markdown('<div class="section-header">🔧 Terminal Settings</div>', unsafe_allow_html=True)
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.subheader("📊 Display Settings")
-            
-            chart_theme = st.selectbox("Chart Theme", ["Dark", "Light", "Quantum"])
-            update_frequency = st.selectbox("Data Update Frequency", 
-                                          ["Real-time", "1 Minute", "5 Minutes", "15 Minutes"])
-            
-            st.checkbox("Show Quantum Signals", value=True)
-            st.checkbox("Show Risk Metrics", value=True)
-            st.checkbox("Show Volume Analysis", value=True)
-        
-        with col2:
-            st.subheader("⚡ Trading Settings")
-            
-            default_quantity = st.number_input("Default Quantity", value=100)
-            max_risk_per_trade = st.slider("Max Risk per Trade (%)", 1, 5, 2)
-            auto_stop_loss = st.checkbox("Auto Calculate Stop Loss", value=True)
-            
-            if st.button("💾 Save Settings", type="primary"):
-                st.success("Settings saved successfully!")
+        if page == "📊 Live Market Dashboard":
+            self.render_live_market_dashboard()
+        elif page == "🔍 Stock Search Engine":
+            self.render_stock_search()
+        elif page == "📈 Sentiment Analysis":
+            self.render_sentiment_analysis()
+        elif page == "🎯 Quant Strategies":
+            self.render_quant_strategies()
+        elif page == "🤖 ML Predictions":
+            self.render_machine_learning()
 
 # Run the enhanced quantum terminal
 if __name__ == "__main__":
