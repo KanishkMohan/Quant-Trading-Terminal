@@ -39,7 +39,6 @@ from datetime import datetime, timedelta
 import threading
 from queue import Queue
 import asyncio
-import websocket
 
 # Page configuration with enhanced settings
 st.set_page_config(
