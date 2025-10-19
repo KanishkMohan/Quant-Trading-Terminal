@@ -32,7 +32,6 @@ import time
 from datetime import datetime, timedelta
 import threading
 from queue import Queue
-import ta  # Technical analysis library
 
 # ==================== ADVANCED CONFIGURATION ====================
 
@@ -1104,7 +1103,7 @@ class IndianStockDatabase:
             'POWERGRID': 'POWERGRID',
             'ULTRACEMCO': 'ULTRACEMCO',
             'M&M': 'M&M',
-            'TATA STEEL': 'TATAMOTORS',
+            'TATA STEEL': 'TATASTEEL',
             'JSW STEEL': 'JSWSTEEL',
             'ADANI ENTERPRISES': 'ADANIENT',
             'ADANI PORTS': 'ADANIPORTS',
@@ -1127,7 +1126,6 @@ class IndianStockDatabase:
             'VEDANTA': 'VEDL',
             'SHREECEM': 'SHREECEM',
             'UPL': 'UPL',
-            'WIPRO': 'WIPRO',
             'ZEEL': 'ZEEL',
             
             # Indices
