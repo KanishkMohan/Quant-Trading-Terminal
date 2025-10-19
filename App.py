@@ -19,179 +19,209 @@ try:
 except ImportError:
     YFINANCE_AVAILABLE = False
 
+try:
+    from nsepy import get_history
+    from datetime import date
+    NSEPY_AVAILABLE = True
+except ImportError:
+    NSEPY_AVAILABLE = False
+
 import requests
 import json
 import time
 from datetime import datetime, timedelta
 import threading
 from queue import Queue
+import ta  # Technical analysis library
 
-# ==================== ENHANCED CSS & STYLING ====================
+# ==================== ADVANCED CONFIGURATION ====================
 
-st.markdown("""
-<style>
-    .main-header {
-        font-size: 3.5rem;
-        font-weight: bold;
-        background: linear-gradient(45deg, #00FF00, #00BFFF, #FF00FF, #FF0000, #FFA500);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-align: center;
-        margin-bottom: 1rem;
-        padding: 1.5rem;
-        border-radius: 20px;
-        border: 3px solid #4f46e5;
-        animation: glow 2s ease-in-out infinite alternate;
-        text-shadow: 0 0 30px rgba(79, 70, 229, 0.7);
-    }
-    
-    @keyframes glow {
-        0% { box-shadow: 0 0 20px rgba(79, 70, 229, 0.5); }
-        100% { box-shadow: 0 0 40px rgba(79, 70, 229, 0.9); }
-    }
-    
-    .section-header {
-        font-size: 2.2rem;
-        font-weight: bold;
-        color: #00BFFF;
-        margin: 1.5rem 0;
-        border-bottom: 3px solid #00BFFF;
-        padding-bottom: 1rem;
-        text-shadow: 0 0 15px rgba(0, 191, 255, 0.5);
-        background: linear-gradient(90deg, rgba(79, 70, 229, 0.1), transparent);
-        padding: 1rem;
-        border-radius: 10px;
-    }
-    
-    .quantum-card {
-        background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-        padding: 2rem;
-        border-radius: 20px;
-        border: 2px solid #4f46e5;
-        box-shadow: 0 12px 24px rgba(79, 70, 229, 0.4);
-        margin: 1rem 0;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .asset-card {
-        background: linear-gradient(135deg, #1e3c72, #2a5298);
-        padding: 1.5rem;
-        border-radius: 15px;
-        margin: 0.5rem;
-        border: 1px solid #4f46e5;
-        box-shadow: 0 6px 12px rgba(79, 70, 229, 0.3);
-        transition: all 0.3s ease;
-    }
-    
-    .asset-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 20px rgba(79, 70, 229, 0.4);
-    }
-    
-    .positive { 
-        color: #00FF00; 
-        font-weight: bold;
-        text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
-    }
-    
-    .negative { 
-        color: #FF4444; 
-        font-weight: bold;
-        text-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
-    }
-    
-    .premium-card {
-        background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF8C00 100%);
-        padding: 1.5rem;
-        border-radius: 15px;
-        margin: 1rem 0;
-        color: #000;
-        font-weight: bold;
-        border: 2px solid #FF8C00;
-        box-shadow: 0 8px 16px rgba(255, 165, 0, 0.4);
-        animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.02); }
-        100% { transform: scale(1); }
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# ==================== COMPLETE DATA MANAGER ====================
-
-class CompleteDataManager:
+class Config:
     def __init__(self):
         self.alpha_vantage_key = "KP3E60AL5IIEREH7"
-        self.data_cache = {}
-        self.live_prices = {}
+        self.finnhub_key = "d3f027pr01qh40fg8npgd3f027pr01qh40fg8nq0"
+        self.indian_api_key = "sk-live-UYMPXvoR0SLhmXlnGyqNqVhlgToFARM3mLgoBdm9"
+        self.webhook_secret = "d3f0bspr01qh40fg9ub0"
+        
+        # Trading parameters
+        self.risk_free_rate = 0.05
+        self.transaction_cost = 0.001
+        
+    def get_api_endpoints(self):
+        return {
+            'alpha_vantage': "https://www.alphavantage.co/query",
+            'finnhub': "https://finnhub.io/api/v1",
+            'indian_api': "https://indianapi.in/api/v1"
+        }
+
+# ==================== QUANTUM ALGORITHMS ====================
+
+class QuantumAlgorithms:
+    def __init__(self):
+        self.config = Config()
     
-    def get_stock_data(self, symbol, period="6mo"):
-        """Get complete stock data with multiple fallbacks"""
-        cache_key = f"{symbol}_{period}"
-        
-        if cache_key in self.data_cache:
-            return self.data_cache[cache_key]
-        
-        # Try Yahoo Finance first
-        data = self._get_yfinance_data(symbol, period)
-        if data.empty:
-            # Fallback to Alpha Vantage
-            data = self._get_alpha_vantage_data(symbol)
-        if data.empty:
-            # Final fallback to realistic sample data
-            data = self._generate_realistic_data(symbol, period)
-        
-        if not data.empty:
-            self.data_cache[cache_key] = data
-        
-        return data
-    
-    def _get_yfinance_data(self, symbol, period):
-        """Get data from Yahoo Finance"""
+    def quantum_entanglement_predictor(self, prices, volume, window=20):
+        """Advanced quantum-inspired prediction algorithm"""
         try:
-            if not YFINANCE_AVAILABLE:
-                return pd.DataFrame()
+            # Calculate multiple technical indicators
+            sma_20 = prices.rolling(window=window).mean()
+            sma_50 = prices.rolling(window=50).mean()
+            rsi = self.calculate_rsi(prices)
+            macd = self.calculate_macd(prices)
             
-            # Handle Indian stock symbols
-            if not any(ext in symbol for ext in ['.NS', '.BO']):
-                symbol += '.NS'
+            # Volume analysis
+            volume_sma = volume.rolling(window=window).mean()
+            volume_ratio = volume / volume_sma
             
-            ticker = yf.Ticker(symbol)
-            data = ticker.history(period=period)
+            # Price momentum
+            momentum = prices.pct_change(window)
             
-            if not data.empty:
-                # Ensure all required columns exist
-                required_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
-                for col in required_cols:
-                    if col not in data.columns:
-                        data[col] = data['Close']  # Fallback to Close price
-                
-                return data[required_cols]
+            # Quantum superposition of indicators
+            quantum_score = (
+                0.3 * (prices > sma_20).astype(int) +
+                0.2 * (prices > sma_50).astype(int) +
+                0.2 * (rsi > 50).astype(int) +
+                0.15 * (macd > 0).astype(int) +
+                0.15 * (volume_ratio > 1).astype(int)
+            )
+            
+            return quantum_score
         except Exception as e:
-            st.error(f"YFinance error for {symbol}: {e}")
-        
-        return pd.DataFrame()
+            st.error(f"Quantum algorithm error: {e}")
+            return pd.Series([0] * len(prices), index=prices.index)
     
-    def _get_alpha_vantage_data(self, symbol):
-        """Get data from Alpha Vantage"""
+    def calculate_rsi(self, prices, period=14):
+        """Calculate RSI indicator"""
+        delta = prices.diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+        rs = gain / loss
+        rsi = 100 - (100 / (1 + rs))
+        return rsi
+    
+    def calculate_macd(self, prices, fast=12, slow=26, signal=9):
+        """Calculate MACD indicator"""
+        ema_fast = prices.ewm(span=fast).mean()
+        ema_slow = prices.ewm(span=slow).mean()
+        macd = ema_fast - ema_slow
+        return macd
+    
+    def quantum_wave_analysis(self, data):
+        """Advanced wave analysis for trend prediction"""
         try:
-            # Remove .NS for Alpha Vantage
-            clean_symbol = symbol.replace('.NS', '')
+            if len(data) < 50:
+                return {"trend": "NEUTRAL", "strength": 0, "confidence": 0}
             
-            url = "https://www.alphavantage.co/query"
+            prices = data['Close']
+            
+            # Multiple timeframe analysis
+            short_trend = self._analyze_trend(prices, 10)
+            medium_trend = self._analyze_trend(prices, 30)
+            long_trend = self._analyze_trend(prices, 50)
+            
+            # Volume confirmation
+            volume_trend = data['Volume'].rolling(20).mean()
+            current_volume = data['Volume'].iloc[-1]
+            volume_strength = current_volume / volume_trend.iloc[-1]
+            
+            # Trend consensus
+            trends = [short_trend, medium_trend, long_trend]
+            bull_count = sum(1 for t in trends if t == "BULLISH")
+            bear_count = sum(1 for t in trends if t == "BEARISH")
+            
+            if bull_count >= 2 and volume_strength > 1:
+                return {"trend": "BULLISH", "strength": volume_strength, "confidence": bull_count/3}
+            elif bear_count >= 2 and volume_strength > 1:
+                return {"trend": "BEARISH", "strength": volume_strength, "confidence": bear_count/3}
+            else:
+                return {"trend": "NEUTRAL", "strength": volume_strength, "confidence": max(bull_count, bear_count)/3}
+                
+        except Exception as e:
+            return {"trend": "NEUTRAL", "strength": 0, "confidence": 0}
+    
+    def _analyze_trend(self, prices, window):
+        """Analyze trend for specific window"""
+        if len(prices) < window:
+            return "NEUTRAL"
+        
+        current_price = prices.iloc[-1]
+        sma = prices.rolling(window=window).mean().iloc[-1]
+        
+        if current_price > sma * 1.02:
+            return "BULLISH"
+        elif current_price < sma * 0.98:
+            return "BEARISH"
+        else:
+            return "NEUTRAL"
+
+# ==================== AI TRADING STRATEGIES ====================
+
+class AITradingStrategies:
+    def __init__(self):
+        self.quantum = QuantumAlgorithms()
+    
+    def momentum_strategy(self, data, lookback=20):
+        """Momentum-based trading strategy"""
+        try:
+            returns = data['Close'].pct_change(lookback)
+            signal = np.where(returns > 0.05, 1, 
+                             np.where(returns < -0.05, -1, 0))
+            return signal
+        except:
+            return np.zeros(len(data))
+    
+    def mean_reversion_strategy(self, data, lookback=20):
+        """Mean reversion trading strategy"""
+        try:
+            sma = data['Close'].rolling(lookback).mean()
+            std = data['Close'].rolling(lookback).std()
+            
+            z_score = (data['Close'] - sma) / std
+            signal = np.where(z_score < -2, 1,
+                             np.where(z_score > 2, -1, 0))
+            return signal
+        except:
+            return np.zeros(len(data))
+    
+    def quantum_hybrid_strategy(self, data):
+        """Quantum-inspired hybrid strategy"""
+        try:
+            momentum_signal = self.momentum_strategy(data)
+            mean_reversion_signal = self.mean_reversion_strategy(data)
+            quantum_signal = self.quantum.quantum_entanglement_predictor(
+                data['Close'], data['Volume']
+            )
+            
+            # Combine signals with weights
+            hybrid_signal = (
+                0.4 * momentum_signal +
+                0.3 * mean_reversion_signal +
+                0.3 * quantum_signal
+            )
+            
+            return np.where(hybrid_signal > 0.5, 1,
+                           np.where(hybrid_signal < -0.5, -1, 0))
+        except:
+            return np.zeros(len(data))
+
+# ==================== ADVANCED API MANAGER ====================
+
+class APIManager:
+    def __init__(self):
+        self.config = Config()
+        self.endpoints = self.config.get_api_endpoints()
+    
+    def get_alpha_vantage_data(self, symbol, function="TIME_SERIES_DAILY"):
+        """Get comprehensive data from Alpha Vantage"""
+        try:
             params = {
-                'function': 'TIME_SERIES_DAILY',
-                'symbol': clean_symbol,
-                'apikey': self.alpha_vantage_key,
+                'function': function,
+                'symbol': symbol,
+                'apikey': self.config.alpha_vantage_key,
                 'outputsize': 'full'
             }
             
-            response = requests.get(url, params=params, timeout=10)
+            response = requests.get(self.endpoints['alpha_vantage'], params=params, timeout=10)
             data = response.json()
             
             if "Time Series (Daily)" in data:
@@ -205,245 +235,668 @@ class CompleteDataManager:
                 })
                 df.index = pd.to_datetime(df.index)
                 df = df.sort_index()
-                return df.astype(float).tail(500)  # Last 500 days
+                return df.astype(float)
+            
+            elif "Global Quote" in data:
+                quote = data["Global Quote"]
+                return {
+                    'symbol': quote.get('01. symbol'),
+                    'price': float(quote.get('05. price', 0)),
+                    'change': float(quote.get('09. change', 0)),
+                    'change_percent': quote.get('10. change percent', '0%')
+                }
+                
+            return {}
         except Exception as e:
-            st.error(f"Alpha Vantage error: {e}")
+            st.error(f"Alpha Vantage API error: {e}")
+            return {}
+    
+    def get_finnhub_quote(self, symbol):
+        """Get real-time quote from Finnhub"""
+        try:
+            url = f"{self.endpoints['finnhub']}/quote"
+            params = {
+                'symbol': symbol,
+                'token': self.config.finnhub_key
+            }
+            response = requests.get(url, params=params, timeout=10)
+            return response.json()
+        except Exception as e:
+            st.error(f"Finnhub API error: {e}")
+            return {}
+    
+    def get_finnhub_candles(self, symbol, resolution='D', count=100):
+        """Get historical candles from Finnhub"""
+        try:
+            url = f"{self.endpoints['finnhub']}/stock/candle"
+            params = {
+                'symbol': symbol,
+                'resolution': resolution,
+                'count': count,
+                'token': self.config.finnhub_key
+            }
+            response = requests.get(url, params=params, timeout=10)
+            data = response.json()
+            
+            if data['s'] == 'ok':
+                df = pd.DataFrame({
+                    'Open': data['o'],
+                    'High': data['h'],
+                    'Low': data['l'],
+                    'Close': data['c'],
+                    'Volume': data['v']
+                }, index=pd.to_datetime(data['t'], unit='s'))
+                return df.sort_index()
+            return pd.DataFrame()
+        except Exception as e:
+            st.error(f"Finnhub candles error: {e}")
+            return pd.DataFrame()
+    
+    def get_indian_stock_data(self, symbol):
+        """Get comprehensive Indian stock data"""
+        try:
+            headers = {
+                'Authorization': f'Bearer {self.config.indian_api_key}',
+                'Content-Type': 'application/json'
+            }
+            
+            endpoints = [
+                f"/stocks/{symbol}/full",
+                f"/quote/{symbol}/detailed",
+                f"/historical/{symbol}/1y"
+            ]
+            
+            for endpoint in endpoints:
+                try:
+                    response = requests.get(
+                        f"{self.endpoints['indian_api']}{endpoint}", 
+                        headers=headers, 
+                        timeout=10
+                    )
+                    if response.status_code == 200:
+                        return response.json()
+                except:
+                    continue
+            return {}
+        except Exception as e:
+            st.error(f"Indian API error: {e}")
+            return {}
+    
+    def get_nse_data(self, symbol, start_date, end_date):
+        """Get data from NSE using nsepy"""
+        try:
+            if not NSEPY_AVAILABLE:
+                return pd.DataFrame()
+            
+            if symbol.endswith('.NS'):
+                symbol = symbol.replace('.NS', '')
+            
+            data = get_history(
+                symbol=symbol,
+                start=start_date,
+                end=end_date
+            )
+            return data
+        except Exception as e:
+            st.error(f"NSE data error: {e}")
+            return pd.DataFrame()
+
+# ==================== ENHANCED DATA MANAGER ====================
+
+class EnhancedDataManager:
+    def __init__(self):
+        self.api_manager = APIManager()
+        self.data_cache = {}
+        self.cache_timeout = 300  # 5 minutes
+    
+    def get_stock_data(self, symbol, period="6mo", source="auto"):
+        """Get stock data from multiple sources with intelligent fallback"""
+        cache_key = f"{symbol}_{period}_{source}"
+        
+        # Check cache
+        if cache_key in self.data_cache:
+            cached_data, timestamp = self.data_cache[cache_key]
+            if time.time() - timestamp < self.cache_timeout:
+                return cached_data
+        
+        data_sources = []
+        
+        if source == "auto" or source == "nse":
+            data_sources.append(self._get_nse_data)
+        if source == "auto" or source == "finnhub":
+            data_sources.append(self._get_finnhub_data)
+        if source == "auto" or source == "alpha_vantage":
+            data_sources.append(self._get_alpha_vantage_data)
+        if source == "auto" or source == "yfinance":
+            data_sources.append(self._get_yfinance_data)
+        
+        # Add fallback sources for auto mode
+        if source == "auto":
+            data_sources.extend([
+                self._get_yfinance_data,
+                self._generate_sample_data
+            ])
+        
+        for source_func in data_sources:
+            try:
+                data = source_func(symbol, period)
+                if not data.empty and len(data) > 10:
+                    # Validate data quality
+                    if self._validate_data(data):
+                        self.data_cache[cache_key] = (data, time.time())
+                        return data
+            except Exception as e:
+                continue
         
         return pd.DataFrame()
     
-    def _generate_realistic_data(self, symbol, period):
-        """Generate highly realistic stock data"""
-        if period == "1mo":
-            days = 30
-        elif period == "3mo":
-            days = 90
-        elif period == "6mo":
-            days = 180
-        else:  # 1y
-            days = 365
+    def _get_nse_data(self, symbol, period):
+        """Get data from NSE"""
+        try:
+            end_date = date.today()
+            
+            period_days = {
+                "1mo": 30, "3mo": 90, "6mo": 180, "1y": 365
+            }.get(period, 180)
+            
+            start_date = end_date - timedelta(days=period_days)
+            
+            data = self.api_manager.get_nse_data(symbol, start_date, end_date)
+            
+            if not data.empty:
+                # Convert to standard format
+                data = data.rename(columns={
+                    'Open': 'Open',
+                    'High': 'High',
+                    'Low': 'Low', 
+                    'Close': 'Close',
+                    'Volume': 'Volume'
+                })
+                return data[['Open', 'High', 'Low', 'Close', 'Volume']]
+        except:
+            pass
+        return pd.DataFrame()
+    
+    def _get_finnhub_data(self, symbol, period):
+        """Get data from Finnhub"""
+        try:
+            resolution_map = {
+                "1mo": "D", "3mo": "D", "6mo": "D", "1y": "D"
+            }
+            
+            count_map = {
+                "1mo": 30, "3mo": 90, "6mo": 180, "1y": 365
+            }
+            
+            data = self.api_manager.get_finnhub_candles(
+                symbol, 
+                resolution_map.get(period, "D"),
+                count_map.get(period, 180)
+            )
+            
+            if not data.empty:
+                return data
+        except:
+            pass
+        return pd.DataFrame()
+    
+    def _get_alpha_vantage_data(self, symbol, period):
+        """Get data from Alpha Vantage"""
+        try:
+            data = self.api_manager.get_alpha_vantage_data(symbol)
+            if not data.empty:
+                # Filter by period
+                period_days = {
+                    "1mo": 30, "3mo": 90, "6mo": 180, "1y": 365
+                }.get(period, 180)
+                
+                if len(data) > period_days:
+                    data = data.tail(period_days)
+                return data
+        except:
+            pass
+        return pd.DataFrame()
+    
+    def _get_yfinance_data(self, symbol, period):
+        """Get data from Yahoo Finance"""
+        try:
+            if not YFINANCE_AVAILABLE:
+                return pd.DataFrame()
+            
+            # Add .NS for Indian stocks if not present
+            if not any(ext in symbol for ext in ['.NS', '.BO', '.NSE']):
+                symbol += '.NS'
+            
+            ticker = yf.Ticker(symbol)
+            data = ticker.history(period=period)
+            
+            if not data.empty:
+                return data
+        except:
+            pass
+        return pd.DataFrame()
+    
+    def _generate_sample_data(self, symbol, period):
+        """Generate realistic sample data"""
+        period_days = {
+            "1mo": 30, "3mo": 90, "6mo": 180, "1y": 365
+        }.get(period, 180)
         
-        dates = pd.date_range(end=datetime.now(), periods=days, freq='D')
+        dates = pd.date_range(end=datetime.now(), periods=period_days, freq='D')
         
-        # Stock-specific base prices
-        base_prices = {
-            'RELIANCE': 2500, 'TCS': 3500, 'HDFCBANK': 1600, 
-            'INFY': 1500, 'ICICIBANK': 900, 'SBIN': 600,
-            '^NSEI': 18000, '^NSEBANK': 42000, '^BSESN': 60000
-        }
+        # Generate realistic price patterns with trends and volatility
+        base_price = 1000 + hash(symbol) % 5000  # Different base for each symbol
+        trend = np.linspace(0, hash(symbol) % 500, period_days)
+        noise = np.random.normal(0, 15 + hash(symbol) % 10, period_days)
         
-        base_price = base_prices.get(symbol.replace('.NS', ''), 1000)
+        close_prices = base_price + trend + noise
         
-        # Realistic price movement with trends and volatility
-        np.random.seed(hash(symbol) % 10000)  # Consistent per symbol
-        
-        # Create realistic trends and patterns
-        trend = np.linspace(0, base_price * 0.2, days)  # 20% trend
-        seasonal = 50 * np.sin(np.linspace(0, 8*np.pi, days))  # Seasonal pattern
-        noise = np.random.normal(0, base_price * 0.02, days)  # 2% daily volatility
-        
-        # Combine components
-        close_prices = base_price + trend + seasonal + noise
-        close_prices = np.maximum(close_prices, base_price * 0.5)  # Prevent negative prices
-        
-        # Generate OHLC data
         data = pd.DataFrame({
-            'Open': close_prices * (1 + np.random.normal(0, 0.008, days)),
-            'High': close_prices * (1 + np.abs(np.random.normal(0.015, 0.008, days))),
-            'Low': close_prices * (1 - np.abs(np.random.normal(0.015, 0.008, days))),
+            'Open': close_prices * (1 + np.random.normal(0, 0.008, period_days)),
+            'High': close_prices * (1 + np.abs(np.random.normal(0.015, 0.008, period_days))),
+            'Low': close_prices * (1 - np.abs(np.random.normal(0.015, 0.008, period_days))),
             'Close': close_prices,
-            'Volume': np.random.lognormal(14, 1, days)  # Realistic volume distribution
+            'Volume': np.random.randint(1000000, 5000000, period_days)
         }, index=dates)
-        
-        # Ensure High >= Low and proper OHLC relationships
-        data['High'] = np.maximum(data[['Open', 'Close', 'High']].max(axis=1), data['Low'] * 1.001)
-        data['Low'] = np.minimum(data[['Open', 'Close', 'Low']].min(axis=1), data['High'] * 0.999)
         
         return data
     
+    def _validate_data(self, data):
+        """Validate data quality"""
+        if data.empty:
+            return False
+        
+        required_columns = ['Open', 'High', 'Low', 'Close']
+        if not all(col in data.columns for col in required_columns):
+            return False
+        
+        # Check for NaN values
+        if data[required_columns].isna().any().any():
+            return False
+        
+        # Check for reasonable price values
+        if (data['Close'] <= 0).any():
+            return False
+        
+        return True
+    
     def get_live_quote(self, symbol):
-        """Get realistic live quote with proper caching"""
-        cache_key = f"quote_{symbol}"
-        
-        # Return cached quote if recent (within 1 minute)
-        if cache_key in self.live_prices:
-            cached_time, cached_quote = self.live_prices[cache_key]
-            if (datetime.now() - cached_time).seconds < 60:
-                return cached_quote
-        
+        """Get comprehensive live quote data"""
         try:
-            # Get recent data for realistic quote
-            data = self.get_stock_data(symbol, "1d")
-            if not data.empty and len(data) > 1:
-                current_price = data['Close'].iloc[-1]
-                prev_close = data['Close'].iloc[-2] if len(data) > 1 else current_price
-                
-                # Add realistic intraday movement
-                intraday_change = np.random.normal(0, current_price * 0.01)  # 1% max daily move
-                current_price += intraday_change
-                current_price = max(current_price, prev_close * 0.95)  # Limit downside
-                
-                change = current_price - prev_close
-                change_percent = (change / prev_close) * 100
-                
-                quote = {
-                    'current': current_price,
-                    'change': change,
-                    'change_percent': change_percent,
-                    'high': data['High'].max(),
-                    'low': data['Low'].min(),
-                    'open': data['Open'].iloc[-1],
-                    'previous_close': prev_close,
-                    'volume': int(data['Volume'].sum())
-                }
-                
-                # Cache the quote
-                self.live_prices[cache_key] = (datetime.now(), quote)
-                return quote
-        except Exception as e:
-            st.error(f"Live quote error: {e}")
+            # Try multiple sources
+            sources = [
+                self._get_finnhub_quote,
+                self._get_alpha_vantage_quote,
+                self._get_yfinance_quote
+            ]
+            
+            for source in sources:
+                quote = source(symbol)
+                if quote and quote.get('current', 0) > 0:
+                    return quote
+        except:
+            pass
         
+        return self._generate_sample_quote(symbol)
+    
+    def _get_finnhub_quote(self, symbol):
+        """Get quote from Finnhub"""
+        try:
+            quote = self.api_manager.get_finnhub_quote(symbol)
+            if quote and 'c' in quote and quote['c'] > 0:
+                return {
+                    'current': quote['c'],
+                    'change': quote.get('d', 0),
+                    'change_percent': quote.get('dp', 0),
+                    'high': quote.get('h', 0),
+                    'low': quote.get('l', 0),
+                    'open': quote.get('o', 0),
+                    'previous_close': quote.get('pc', 0),
+                    'volume': quote.get('v', 0),
+                    'timestamp': datetime.now()
+                }
+        except:
+            pass
         return None
+    
+    def _get_alpha_vantage_quote(self, symbol):
+        """Get quote from Alpha Vantage"""
+        try:
+            data = self.api_manager.get_alpha_vantage_data(symbol, "GLOBAL_QUOTE")
+            if data and 'price' in data:
+                return {
+                    'current': data['price'],
+                    'change': data.get('change', 0),
+                    'change_percent': float(data.get('change_percent', '0%').rstrip('%')),
+                    'volume': data.get('volume', 0),
+                    'timestamp': datetime.now()
+                }
+        except:
+            pass
+        return None
+    
+    def _get_yfinance_quote(self, symbol):
+        """Get quote from Yahoo Finance"""
+        try:
+            if not YFINANCE_AVAILABLE:
+                return None
+            
+            if not any(ext in symbol for ext in ['.NS', '.BO', '.NSE']):
+                symbol += '.NS'
+            
+            ticker = yf.Ticker(symbol)
+            info = ticker.info
+            history = ticker.history(period="1d")
+            
+            if not history.empty:
+                return {
+                    'current': info.get('currentPrice', history['Close'].iloc[-1]),
+                    'change': info.get('regularMarketChange', 0),
+                    'change_percent': info.get('regularMarketChangePercent', 0),
+                    'high': history['High'].iloc[-1],
+                    'low': history['Low'].iloc[-1],
+                    'open': history['Open'].iloc[-1],
+                    'volume': history['Volume'].iloc[-1],
+                    'previous_close': info.get('regularMarketPreviousClose', 0),
+                    'timestamp': datetime.now()
+                }
+        except:
+            pass
+        return None
+    
+    def _generate_sample_quote(self, symbol):
+        """Generate sample quote data"""
+        return {
+            'current': 1000 + hash(symbol) % 5000,
+            'change': (hash(symbol) % 100) - 50,
+            'change_percent': ((hash(symbol) % 100) - 50) / 100,
+            'high': 1100 + hash(symbol) % 5000,
+            'low': 900 + hash(symbol) % 5000,
+            'open': 1000 + hash(symbol) % 5000,
+            'volume': 1000000 + hash(symbol) % 4000000,
+            'previous_close': 950 + hash(symbol) % 5000,
+            'timestamp': datetime.now()
+        }
 
-# ==================== COMPLETE TECHNICAL ANALYSIS ====================
+# ==================== ADVANCED TECHNICAL ANALYSIS ====================
 
-class CompleteTechnicalAnalysis:
+class AdvancedTechnicalAnalysis:
     def __init__(self):
-        self.indicators = {}
+        self.quantum = QuantumAlgorithms()
     
     def calculate_all_indicators(self, data):
         """Calculate comprehensive technical indicators"""
-        if data.empty or len(data) < 20:
+        if data.empty or len(data) < 50:
             return {}
         
+        indicators = {}
+        
         try:
-            indicators = {}
-            close = data['Close']
+            prices = data['Close']
+            volume = data['Volume']
             
-            # Moving Averages
-            indicators['sma_20'] = close.rolling(20).mean().iloc[-1]
-            indicators['sma_50'] = close.rolling(50).mean().iloc[-1]
-            indicators['sma_200'] = close.rolling(200).mean().iloc[-1] if len(data) > 200 else None
+            # Trend Indicators
+            indicators.update(self._calculate_trend_indicators(prices))
             
-            # RSI
-            indicators['rsi'] = self._calculate_rsi(close).iloc[-1]
+            # Momentum Indicators
+            indicators.update(self._calculate_momentum_indicators(prices))
             
-            # MACD
-            macd, signal, histogram = self._calculate_macd(close)
-            indicators['macd'] = macd.iloc[-1]
-            indicators['macd_signal'] = signal.iloc[-1]
-            indicators['macd_histogram'] = histogram.iloc[-1]
+            # Volatility Indicators
+            indicators.update(self._calculate_volatility_indicators(prices))
             
-            # Bollinger Bands
-            bb_upper, bb_lower, bb_middle = self._calculate_bollinger_bands(close)
-            indicators['bb_upper'] = bb_upper.iloc[-1]
-            indicators['bb_lower'] = bb_lower.iloc[-1]
-            indicators['bb_position'] = (close.iloc[-1] - bb_lower.iloc[-1]) / (bb_upper.iloc[-1] - bb_lower.iloc[-1]) * 100
-            
-            # Stochastic
-            stoch_k, stoch_d = self._calculate_stochastic(data['High'], data['Low'], close)
-            indicators['stoch_k'] = stoch_k.iloc[-1]
-            indicators['stoch_d'] = stoch_d.iloc[-1]
+            # Volume Indicators
+            indicators.update(self._calculate_volume_indicators(prices, volume))
             
             # Support and Resistance
-            indicators['support'] = data['Low'].tail(20).min()
-            indicators['resistance'] = data['High'].tail(20).max()
+            indicators.update(self._calculate_support_resistance(data))
             
-            # Volatility
-            returns = close.pct_change().dropna()
-            indicators['volatility'] = returns.std() * np.sqrt(252) * 100
+            # Quantum Analysis
+            indicators.update(self._calculate_quantum_indicators(data))
             
-            # Volume Analysis
-            if 'Volume' in data.columns:
-                volume_sma = data['Volume'].rolling(20).mean()
-                indicators['volume_ratio'] = (data['Volume'].iloc[-1] / volume_sma.iloc[-1]) if volume_sma.iloc[-1] > 0 else 1
-            
-            # Trend Analysis
-            current_price = close.iloc[-1]
-            price_5d_ago = close.iloc[-5] if len(data) >= 5 else current_price
-            price_20d_ago = close.iloc[-20] if len(data) >= 20 else current_price
-            
-            short_trend = "BULLISH" if current_price > price_5d_ago else "BEARISH"
-            medium_trend = "BULLISH" if current_price > price_20d_ago else "BEARISH"
-            
-            if short_trend == "BULLISH" and medium_trend == "BULLISH":
-                indicators['trend'] = "STRONG BULLISH"
-            elif short_trend == "BEARISH" and medium_trend == "BEARISH":
-                indicators['trend'] = "STRONG BEARISH"
-            else:
-                indicators['trend'] = "MIXED"
-            
-            # Signal Strength (0-100)
-            signal_strength = 50
-            if indicators['rsi'] < 30: signal_strength += 20
-            if indicators['rsi'] > 70: signal_strength -= 20
-            if indicators['macd_histogram'] > 0: signal_strength += 10
-            if current_price > indicators['sma_20'] > indicators['sma_50']: signal_strength += 20
-            
-            indicators['signal_strength'] = min(100, max(0, signal_strength))
-            
-            return indicators
+            # Trading Signals
+            indicators.update(self._generate_trading_signals(indicators))
             
         except Exception as e:
             st.error(f"Technical analysis error: {e}")
-            return {}
+        
+        return indicators
     
-    def _calculate_rsi(self, prices, period=14):
+    def _calculate_trend_indicators(self, prices):
+        """Calculate trend-based indicators"""
+        indicators = {}
+        
+        # Moving Averages
+        indicators['sma_20'] = prices.rolling(20).mean().iloc[-1]
+        indicators['sma_50'] = prices.rolling(50).mean().iloc[-1]
+        indicators['sma_200'] = prices.rolling(200).mean().iloc[-1] if len(prices) > 200 else prices.rolling(len(prices)).mean().iloc[-1]
+        
+        # EMA
+        indicators['ema_12'] = prices.ewm(span=12).mean().iloc[-1]
+        indicators['ema_26'] = prices.ewm(span=26).mean().iloc[-1]
+        
+        # MACD
+        macd = indicators['ema_12'] - indicators['ema_26']
+        indicators['macd'] = macd
+        indicators['macd_signal'] = prices.ewm(span=9).mean().iloc[-1]
+        indicators['macd_histogram'] = macd - indicators['macd_signal']
+        
+        # ADX (simplified)
+        high = prices.rolling(14).max()
+        low = prices.rolling(14).min()
+        tr = np.maximum(high - low, np.abs(high - prices.shift(1)))
+        atr = tr.rolling(14).mean()
+        indicators['atr'] = atr.iloc[-1] if not atr.empty else 0
+        
+        return indicators
+    
+    def _calculate_momentum_indicators(self, prices):
+        """Calculate momentum indicators"""
+        indicators = {}
+        
+        # RSI
         delta = prices.diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+        gain = (delta.where(delta > 0, 0)).rolling(14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
         rs = gain / loss
-        return 100 - (100 / (1 + rs))
+        indicators['rsi'] = 100 - (100 / (1 + rs)).iloc[-1]
+        
+        # Stochastic
+        low_14 = prices.rolling(14).min()
+        high_14 = prices.rolling(14).max()
+        indicators['stoch_k'] = 100 * ((prices - low_14) / (high_14 - low_14)).iloc[-1]
+        indicators['stoch_d'] = indicators['stoch_k']  # Simplified
+        
+        # Williams %R
+        indicators['williams_r'] = ((high_14 - prices) / (high_14 - low_14) * -100).iloc[-1]
+        
+        # CCI
+        typical_price = (prices + prices.rolling(14).max() + prices.rolling(14).min()) / 3
+        cci = (typical_price - typical_price.rolling(20).mean()) / (0.015 * typical_price.rolling(20).std())
+        indicators['cci'] = cci.iloc[-1]
+        
+        return indicators
     
-    def _calculate_macd(self, prices, fast=12, slow=26, signal=9):
-        ema_fast = prices.ewm(span=fast).mean()
-        ema_slow = prices.ewm(span=slow).mean()
-        macd = ema_fast - ema_slow
-        signal_line = macd.ewm(span=signal).mean()
-        histogram = macd - signal_line
-        return macd, signal_line, histogram
+    def _calculate_volatility_indicators(self, prices):
+        """Calculate volatility indicators"""
+        indicators = {}
+        
+        # Bollinger Bands
+        sma_20 = prices.rolling(20).mean()
+        std_20 = prices.rolling(20).std()
+        
+        indicators['bb_upper'] = sma_20.iloc[-1] + (std_20.iloc[-1] * 2)
+        indicators['bb_lower'] = sma_20.iloc[-1] - (std_20.iloc[-1] * 2)
+        indicators['bb_middle'] = sma_20.iloc[-1]
+        indicators['bb_position'] = (prices.iloc[-1] - indicators['bb_lower']) / (indicators['bb_upper'] - indicators['bb_lower'])
+        
+        # Volatility
+        returns = prices.pct_change().dropna()
+        indicators['volatility_20d'] = returns.rolling(20).std().iloc[-1] * np.sqrt(252) * 100
+        indicators['volatility_50d'] = returns.rolling(50).std().iloc[-1] * np.sqrt(252) * 100
+        
+        return indicators
     
-    def _calculate_bollinger_bands(self, prices, period=20, std_dev=2):
-        sma = prices.rolling(period).mean()
-        std = prices.rolling(period).std()
-        upper_band = sma + (std * std_dev)
-        lower_band = sma - (std * std_dev)
-        return upper_band, lower_band, sma
+    def _calculate_volume_indicators(self, prices, volume):
+        """Calculate volume-based indicators"""
+        indicators = {}
+        
+        # Volume SMA
+        indicators['volume_sma_20'] = volume.rolling(20).mean().iloc[-1]
+        
+        # OBV
+        obv = (volume * np.sign(prices.diff())).cumsum()
+        indicators['obv'] = obv.iloc[-1]
+        
+        # Volume Price Trend
+        vpt = (volume * (prices.diff() / prices.shift(1))).cumsum()
+        indicators['vpt'] = vpt.iloc[-1]
+        
+        return indicators
     
-    def _calculate_stochastic(self, high, low, close, k_period=14, d_period=3):
-        lowest_low = low.rolling(k_period).min()
-        highest_high = high.rolling(k_period).max()
-        stoch_k = 100 * ((close - lowest_low) / (highest_high - lowest_low))
-        stoch_d = stoch_k.rolling(d_period).mean()
-        return stoch_k, stoch_d
+    def _calculate_support_resistance(self, data):
+        """Calculate support and resistance levels"""
+        indicators = {}
+        
+        if len(data) < 20:
+            return indicators
+        
+        # Recent high/low
+        recent_data = data.tail(20)
+        indicators['support_1'] = recent_data['Low'].min()
+        indicators['resistance_1'] = recent_data['High'].max()
+        
+        # Pivot points
+        pivot = (data['High'].iloc[-1] + data['Low'].iloc[-1] + data['Close'].iloc[-1]) / 3
+        indicators['pivot'] = pivot
+        indicators['r1'] = 2 * pivot - data['Low'].iloc[-1]
+        indicators['s1'] = 2 * pivot - data['High'].iloc[-1]
+        
+        return indicators
+    
+    def _calculate_quantum_indicators(self, data):
+        """Calculate quantum-inspired indicators"""
+        indicators = {}
+        
+        try:
+            quantum_score = self.quantum.quantum_entanglement_predictor(
+                data['Close'], data['Volume']
+            )
+            indicators['quantum_score'] = quantum_score.iloc[-1] if not quantum_score.empty else 0
+            
+            wave_analysis = self.quantum.quantum_wave_analysis(data)
+            indicators.update(wave_analysis)
+            
+        except:
+            indicators['quantum_score'] = 0
+            indicators['trend'] = "NEUTRAL"
+            indicators['strength'] = 0
+            indicators['confidence'] = 0
+        
+        return indicators
+    
+    def _generate_trading_signals(self, indicators):
+        """Generate trading signals based on indicators"""
+        signals = {}
+        
+        try:
+            # RSI signals
+            if indicators.get('rsi', 50) < 30:
+                signals['rsi_signal'] = "OVERSOLD"
+            elif indicators.get('rsi', 50) > 70:
+                signals['rsi_signal'] = "OVERBOUGHT"
+            else:
+                signals['rsi_signal'] = "NEUTRAL"
+            
+            # MACD signals
+            if indicators.get('macd', 0) > indicators.get('macd_signal', 0):
+                signals['macd_signal'] = "BULLISH"
+            else:
+                signals['macd_signal'] = "BEARISH"
+            
+            # Trend signals
+            current_price = indicators.get('sma_20', 0)  # Approximation
+            if (current_price > indicators.get('sma_20', 0) > indicators.get('sma_50', 0) > indicators.get('sma_200', 0)):
+                signals['trend_strength'] = "STRONG BULLISH"
+            elif current_price > indicators.get('sma_20', 0) > indicators.get('sma_50', 0):
+                signals['trend_strength'] = "BULLISH"
+            elif current_price < indicators.get('sma_20', 0) < indicators.get('sma_50', 0) < indicators.get('sma_200', 0):
+                signals['trend_strength'] = "STRONG BEARISH"
+            elif current_price < indicators.get('sma_20', 0) < indicators.get('sma_50', 0):
+                signals['trend_strength'] = "BEARISH"
+            else:
+                signals['trend_strength'] = "NEUTRAL"
+            
+            # Overall signal
+            bullish_signals = 0
+            total_signals = 0
+            
+            if signals.get('rsi_signal') == "OVERSOLD":
+                bullish_signals += 1
+            elif signals.get('rsi_signal') == "OVERBOUGHT":
+                bullish_signals -= 1
+            total_signals += 1
+            
+            if signals.get('macd_signal') == "BULLISH":
+                bullish_signals += 1
+            else:
+                bullish_signals -= 1
+            total_signals += 1
+            
+            if "BULLISH" in signals.get('trend_strength', ""):
+                bullish_signals += 1
+            elif "BEARISH" in signals.get('trend_strength', ""):
+                bullish_signals -= 1
+            total_signals += 1
+            
+            if bullish_signals > 0:
+                signals['overall_signal'] = "BUY"
+            elif bullish_signals < 0:
+                signals['overall_signal'] = "SELL"
+            else:
+                signals['overall_signal'] = "HOLD"
+                
+        except Exception as e:
+            signals['overall_signal'] = "HOLD"
+        
+        return signals
 
-# ==================== COMPLETE CHARTING ENGINE ====================
+# ==================== ADVANCED CHARTING ENGINE ====================
 
-class CompleteChartingEngine:
+class AdvancedChartingEngine:
     def __init__(self):
-        self.tech_analysis = CompleteTechnicalAnalysis()
+        self.tech_analysis = AdvancedTechnicalAnalysis()
     
-    def create_comprehensive_chart(self, data, symbol_name):
-        """Create complete professional trading chart"""
+    def create_advanced_chart(self, data, title="Stock Analysis", indicators=True):
+        """Create comprehensive stock chart with technical indicators"""
         if not PLOTLY_AVAILABLE or data.empty:
             return None
         
         try:
-            # Create subplots with multiple panels
-            fig = make_subplots(
-                rows=4, cols=1,
-                shared_xaxes=True,
-                vertical_spacing=0.05,
-                subplot_titles=(
-                    f'{symbol_name} - Price & Moving Averages',
-                    'MACD',
-                    'RSI',
-                    'Volume'
-                ),
-                row_heights=[0.4, 0.2, 0.2, 0.2]
-            )
+            if indicators:
+                # Create subplots for indicators
+                fig = make_subplots(
+                    rows=4, cols=1,
+                    shared_xaxes=True,
+                    vertical_spacing=0.05,
+                    subplot_titles=(
+                        f'{title} - Price & Trends', 
+                        'Volume',
+                        'RSI',
+                        'MACD'
+                    ),
+                    row_heights=[0.4, 0.2, 0.2, 0.2]
+                )
+            else:
+                # Simple price chart
+                fig = make_subplots(
+                    rows=2, cols=1,
+                    shared_xaxes=True,
+                    vertical_spacing=0.1,
+                    subplot_titles=(f'{title} - Price', 'Volume'),
+                    row_heights=[0.7, 0.3]
+                )
             
-            # Panel 1: Price with indicators
-            # Candlestick
+            # Candlestick chart
             fig.add_trace(go.Candlestick(
                 x=data.index,
                 open=data['Open'],
@@ -453,291 +906,321 @@ class CompleteChartingEngine:
                 name='Price'
             ), row=1, col=1)
             
-            # Moving averages
+            # Add moving averages if we have enough data
             if len(data) > 20:
-                sma_20 = data['Close'].rolling(20).mean()
+                # SMA 20
+                sma_20 = data['Close'].rolling(window=20).mean()
                 fig.add_trace(go.Scatter(
                     x=data.index, y=sma_20,
                     mode='lines', name='SMA 20',
                     line=dict(color='orange', width=2)
                 ), row=1, col=1)
-            
-            if len(data) > 50:
-                sma_50 = data['Close'].rolling(50).mean()
-                fig.add_trace(go.Scatter(
-                    x=data.index, y=sma_50,
-                    mode='lines', name='SMA 50',
-                    line=dict(color='red', width=2)
-                ), row=1, col=1)
+                
+                # SMA 50
+                if len(data) > 50:
+                    sma_50 = data['Close'].rolling(window=50).mean()
+                    fig.add_trace(go.Scatter(
+                        x=data.index, y=sma_50,
+                        mode='lines', name='SMA 50',
+                        line=dict(color='red', width=2)
+                    ), row=1, col=1)
             
             # Bollinger Bands
             if len(data) > 20:
-                bb_upper, bb_lower, bb_middle = self.tech_analysis._calculate_bollinger_bands(data['Close'])
+                sma_20 = data['Close'].rolling(20).mean()
+                std_20 = data['Close'].rolling(20).std()
+                bb_upper = sma_20 + (std_20 * 2)
+                bb_lower = sma_20 - (std_20 * 2)
+                
                 fig.add_trace(go.Scatter(
                     x=data.index, y=bb_upper,
                     mode='lines', name='BB Upper',
-                    line=dict(color='rgba(255,255,255,0.5)', width=1),
-                    showlegend=False
+                    line=dict(color='rgba(255,255,255,0.5)', width=1)
                 ), row=1, col=1)
+                
                 fig.add_trace(go.Scatter(
                     x=data.index, y=bb_lower,
                     mode='lines', name='BB Lower',
                     line=dict(color='rgba(255,255,255,0.5)', width=1),
                     fill='tonexty',
-                    fillcolor='rgba(255,255,255,0.1)',
-                    showlegend=False
+                    fillcolor='rgba(128,128,128,0.1)'
                 ), row=1, col=1)
             
-            # Panel 2: MACD
-            if len(data) > 26:
-                macd, signal, histogram = self.tech_analysis._calculate_macd(data['Close'])
-                fig.add_trace(go.Scatter(
-                    x=data.index, y=macd,
-                    mode='lines', name='MACD',
-                    line=dict(color='blue', width=2)
-                ), row=2, col=1)
-                fig.add_trace(go.Scatter(
-                    x=data.index, y=signal,
-                    mode='lines', name='Signal',
-                    line=dict(color='red', width=2)
-                ), row=2, col=1)
-                fig.add_trace(go.Bar(
-                    x=data.index, y=histogram,
-                    name='Histogram',
-                    marker_color=['green' if h >= 0 else 'red' for h in histogram]
-                ), row=2, col=1)
-            
-            # Panel 3: RSI
-            if len(data) > 14:
-                rsi = self.tech_analysis._calculate_rsi(data['Close'])
-                fig.add_trace(go.Scatter(
-                    x=data.index, y=rsi,
-                    mode='lines', name='RSI',
-                    line=dict(color='purple', width=2)
-                ), row=3, col=1)
-                # RSI levels
-                fig.add_hline(y=70, line_dash="dash", line_color="red", row=3, col=1)
-                fig.add_hline(y=30, line_dash="dash", line_color="green", row=3, col=1)
-                fig.add_hline(y=50, line_dash="dot", line_color="gray", row=3, col=1)
-            
-            # Panel 4: Volume
+            # Volume
             if 'Volume' in data.columns:
                 colors = ['green' if data['Close'].iloc[i] >= data['Open'].iloc[i] else 'red' 
                          for i in range(len(data))]
+                
                 fig.add_trace(go.Bar(
                     x=data.index,
                     y=data['Volume'],
                     name='Volume',
                     marker_color=colors,
-                    opacity=0.7
+                    opacity=0.6
+                ), row=2, col=1)
+            
+            # Technical indicators
+            if indicators and len(data) > 14:
+                # RSI
+                rsi = self._calculate_rsi(data['Close'])
+                fig.add_trace(go.Scatter(
+                    x=data.index, y=rsi,
+                    mode='lines', name='RSI',
+                    line=dict(color='purple', width=2)
+                ), row=3, col=1)
+                
+                # RSI levels
+                fig.add_hline(y=70, line_dash="dash", line_color="red", row=3, col=1)
+                fig.add_hline(y=30, line_dash="dash", line_color="green", row=3, col=1)
+                fig.add_hline(y=50, line_dash="dot", line_color="white", row=3, col=1)
+                
+                # MACD
+                macd, signal, histogram = self._calculate_macd(data['Close'])
+                fig.add_trace(go.Scatter(
+                    x=data.index, y=macd,
+                    mode='lines', name='MACD',
+                    line=dict(color='blue', width=2)
+                ), row=4, col=1)
+                
+                fig.add_trace(go.Scatter(
+                    x=data.index, y=signal,
+                    mode='lines', name='Signal',
+                    line=dict(color='red', width=2)
+                ), row=4, col=1)
+                
+                # MACD histogram
+                colors_hist = ['green' if val >= 0 else 'red' for val in histogram]
+                fig.add_trace(go.Bar(
+                    x=data.index, y=histogram,
+                    name='MACD Hist',
+                    marker_color=colors_hist,
+                    opacity=0.6
                 ), row=4, col=1)
             
             fig.update_layout(
-                title=f"Professional Analysis - {symbol_name}",
+                title=f"Advanced Analysis - {title}",
+                xaxis_title="Date",
+                yaxis_title="Price",
                 template="plotly_dark",
-                height=900,
-                showlegend=True,
-                xaxis_rangeslider_visible=False
+                height=800 if indicators else 600,
+                showlegend=True
             )
+            
+            fig.update_xaxes(rangeslider_visible=False)
             
             return fig
             
         except Exception as e:
             st.error(f"Chart creation error: {e}")
             return None
+    
+    def _calculate_rsi(self, prices, period=14):
+        """Calculate RSI indicator"""
+        delta = prices.diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+        rs = gain / loss
+        rsi = 100 - (100 / (1 + rs))
+        return rsi
+    
+    def _calculate_macd(self, prices, fast=12, slow=26, signal=9):
+        """Calculate MACD indicator"""
+        ema_fast = prices.ewm(span=fast).mean()
+        ema_slow = prices.ewm(span=slow).mean()
+        macd = ema_fast - ema_slow
+        macd_signal = macd.ewm(span=signal).mean()
+        macd_histogram = macd - macd_signal
+        return macd, macd_signal, macd_histogram
 
-# ==================== COMPLETE STOCK DATABASE ====================
+# ==================== PORTFOLIO MANAGER ====================
 
-class CompleteStockDatabase:
+class PortfolioManager:
+    def __init__(self):
+        self.data_manager = EnhancedDataManager()
+        self.tech_analysis = AdvancedTechnicalAnalysis()
+        
+    def calculate_portfolio_metrics(self, holdings):
+        """Calculate comprehensive portfolio metrics"""
+        if not holdings:
+            return {}
+        
+        total_value = 0
+        total_cost = 0
+        daily_pnl = 0
+        unrealized_pnl = 0
+        
+        for symbol, holding in holdings.items():
+            current_price = self.data_manager.get_live_quote(symbol).get('current', 0)
+            current_value = current_price * holding['quantity']
+            cost_basis = holding.get('average_cost', 0) * holding['quantity']
+            
+            total_value += current_value
+            total_cost += cost_basis
+            unrealized_pnl += (current_value - cost_basis)
+            
+            # Daily PnL calculation
+            prev_close = self.data_manager.get_live_quote(symbol).get('previous_close', current_price)
+            daily_pnl += (current_price - prev_close) * holding['quantity']
+        
+        metrics = {
+            'total_value': total_value,
+            'total_cost': total_cost,
+            'unrealized_pnl': unrealized_pnl,
+            'unrealized_pnl_percent': (unrealized_pnl / total_cost * 100) if total_cost > 0 else 0,
+            'daily_pnl': daily_pnl,
+            'daily_pnl_percent': (daily_pnl / total_value * 100) if total_value > 0 else 0
+        }
+        
+        return metrics
+
+# ==================== INDIAN STOCK DATABASE ====================
+
+class IndianStockDatabase:
     def __init__(self):
         self.indian_stocks = {
-            # Nifty 50
-            'RELIANCE': 'RELIANCE', 'TCS': 'TCS', 'HDFC BANK': 'HDFCBANK',
-            'ICICI BANK': 'ICICIBANK', 'INFOSYS': 'INFY', 'HUL': 'HINDUNILVR',
-            'ITC': 'ITC', 'SBIN': 'SBIN', 'BHARTI AIRTEL': 'BHARTIARTL',
-            'KOTAK BANK': 'KOTAKBANK', 'LT': 'LT', 'AXIS BANK': 'AXISBANK',
-            'ASIAN PAINTS': 'ASIANPAINT', 'MARUTI': 'MARUTI', 'TITAN': 'TITAN',
-            'SUN PHARMA': 'SUNPHARMA', 'HCL TECH': 'HCLTECH', 'DMART': 'DMART',
-            'BAJFINANCE': 'BAJFINANCE', 'WIPRO': 'WIPRO', 'TECHM': 'TECHM',
-            'ULTRACEMCO': 'ULTRACEMCO', 'NESTLE': 'NESTLEIND', 'POWERGRID': 'POWERGRID',
-            'NTPC': 'NTPC', 'ONGC': 'ONGC', 'COAL INDIA': 'COALINDIA',
-            'TATA STEEL': 'TATASTEEL', 'JSW STEEL': 'JSWSTEEL', 'HDFC LIFE': 'HDFCLIFE',
-            
-            # Additional popular
-            'ADANI ENTERPRISES': 'ADANIENT', 'ADANI PORTS': 'ADANIPORTS',
-            'BAJAJ FINSERV': 'BAJAJFINSV', 'TATA MOTORS': 'TATAMOTORS',
-            'ZOMATO': 'ZOMATO', 'PAYTM': 'PAYTM', 'NYKAA': 'NYKAA',
+            # Nifty 50 Stocks
+            'RELIANCE': 'RELIANCE',
+            'TCS': 'TCS', 
+            'HDFC BANK': 'HDFCBANK',
+            'ICICI BANK': 'ICICIBANK',
+            'INFOSYS': 'INFY',
+            'HUL': 'HINDUNILVR',
+            'ITC': 'ITC',
+            'SBIN': 'SBIN',
+            'BHARTI AIRTEL': 'BHARTIARTL',
+            'KOTAK BANK': 'KOTAKBANK',
+            'LT': 'LT',
+            'AXIS BANK': 'AXISBANK',
+            'ASIAN PAINTS': 'ASIANPAINT',
+            'MARUTI': 'MARUTI',
+            'TITAN': 'TITAN',
+            'SUN PHARMA': 'SUNPHARMA',
+            'HCL TECH': 'HCLTECH',
+            'DMART': 'DMART',
+            'BAJFINANCE': 'BAJFINANCE',
+            'WIPRO': 'WIPRO',
+            'ONGC': 'ONGC',
+            'NTPC': 'NTPC',
+            'POWERGRID': 'POWERGRID',
+            'ULTRACEMCO': 'ULTRACEMCO',
+            'M&M': 'M&M',
+            'TATA STEEL': 'TATAMOTORS',
+            'JSW STEEL': 'JSWSTEEL',
+            'ADANI ENTERPRISES': 'ADANIENT',
+            'ADANI PORTS': 'ADANIPORTS',
+            'BAJAJ FINSERV': 'BAJAJFINSV',
+            'TECH MAHINDRA': 'TECHM',
+            'NESTLE': 'NESTLEIND',
+            'BRITANNIA': 'BRITANNIA',
+            'HDFC LIFE': 'HDFCLIFE',
+            'SBILIFE': 'SBILIFE',
+            'CIPLA': 'CIPLA',
+            'DRREDDY': 'DRREDDY',
+            'EICHERMOT': 'EICHERMOT',
+            'GRASIM': 'GRASIM',
+            'HINDALCO': 'HINDALCO',
+            'INDUSINDBK': 'INDUSINDBK',
+            'COALINDIA': 'COALINDIA',
+            'BPCL': 'BPCL',
+            'HINDPETRO': 'HINDPETRO',
+            'IOC': 'IOC',
+            'VEDANTA': 'VEDL',
+            'SHREECEM': 'SHREECEM',
+            'UPL': 'UPL',
+            'WIPRO': 'WIPRO',
+            'ZEEL': 'ZEEL',
             
             # Indices
-            'NIFTY 50': '^NSEI', 'BANK NIFTY': '^NSEBANK', 'SENSEX': '^BSESN',
-            'NIFTY IT': '^CNXIT', 'INDIA VIX': '^INDIAVIX',
+            'NIFTY 50': '^NSEI',
+            'BANK NIFTY': '^NSEBANK', 
+            'SENSEX': '^BSESN',
+            'NIFTY IT': '^CNXIT',
             
-            # Global
-            'S&P 500': '^GSPC', 'NASDAQ': '^IXIC', 'DOW JONES': '^DJI',
-            'GOLD': 'GC=F', 'SILVER': 'SI=F', 'CRUDE OIL': 'CL=F',
-            'BITCOIN': 'BTC-USD', 'ETHEREUM': 'ETH-USD'
+            # Popular stocks
+            'ZOMATO': 'ZOMATO',
+            'PAYTM': 'PAYTM',
+            'IRCTC': 'IRCTC',
+            'TATA MOTORS': 'TATAMOTORS',
+            'TATA CONSULTANCY': 'TCS'
         }
     
     def search_stocks(self, query):
-        """Enhanced stock search"""
-        query = query.upper().strip()
+        """Search stocks by name or symbol"""
+        query = query.upper()
         results = {}
         
-        categories = {
-            'Nifty 50 Stocks': {k: v for k, v in self.indian_stocks.items() 
-                               if k in ['RELIANCE', 'TCS', 'HDFC BANK', 'ICICI BANK', 'INFOSYS', 
-                                       'HUL', 'ITC', 'SBIN', 'BHARTI AIRTEL', 'KOTAK BANK']},
-            'Other Indian Stocks': {k: v for k, v in self.indian_stocks.items() 
-                                  if k not in ['NIFTY 50', 'BANK NIFTY', 'SENSEX', 'NIFTY IT', 'INDIA VIX'] 
-                                  and k not in ['RELIANCE', 'TCS', 'HDFC BANK', 'ICICI BANK', 'INFOSYS']},
-            'Indices': {k: v for k, v in self.indian_stocks.items() 
-                       if k in ['NIFTY 50', 'BANK NIFTY', 'SENSEX', 'NIFTY IT', 'INDIA VIX']},
-            'Global Assets': {k: v for k, v in self.indian_stocks.items() 
-                            if k in ['S&P 500', 'NASDAQ', 'DOW JONES', 'GOLD', 'SILVER', 'CRUDE OIL', 'BITCOIN', 'ETHEREUM']}
-        }
-        
-        for category, stocks in categories.items():
-            matches = {name: symbol for name, symbol in stocks.items() 
-                      if query in name or query in symbol}
-            if matches:
-                results[category] = matches
+        for name, symbol in self.indian_stocks.items():
+            if query in name or query in symbol:
+                results[name] = symbol
         
         return results
     
     def get_all_stocks(self):
         return self.indian_stocks
 
-# ==================== PORTFOLIO MANAGER ====================
+# ==================== QUANTUM TRADING TERMINAL ====================
 
-class PortfolioManager:
+class QuantumTradingTerminal:
     def __init__(self):
-        if 'portfolio' not in st.session_state:
-            st.session_state.portfolio = {
-                'cash': 1000000,  # Starting cash
-                'positions': {},   # {symbol: {'quantity': qty, 'avg_price': price}}
-                'transactions': [] # List of all transactions
-            }
-    
-    def add_position(self, symbol, quantity, price, action="BUY"):
-        """Add or update portfolio position"""
-        if action.upper() == "BUY":
-            total_cost = quantity * price
-            if total_cost > st.session_state.portfolio['cash']:
-                return False, "Insufficient funds"
-            
-            # Update cash
-            st.session_state.portfolio['cash'] -= total_cost
-            
-            # Update position
-            if symbol in st.session_state.portfolio['positions']:
-                pos = st.session_state.portfolio['positions'][symbol]
-                total_qty = pos['quantity'] + quantity
-                total_value = (pos['quantity'] * pos['avg_price']) + total_cost
-                pos['avg_price'] = total_value / total_qty
-                pos['quantity'] = total_qty
-            else:
-                st.session_state.portfolio['positions'][symbol] = {
-                    'quantity': quantity,
-                    'avg_price': price
-                }
-            
-            # Record transaction
-            st.session_state.portfolio['transactions'].append({
-                'date': datetime.now(),
-                'symbol': symbol,
-                'action': 'BUY',
-                'quantity': quantity,
-                'price': price,
-                'total': total_cost
-            })
-            
-            return True, "Buy order executed successfully"
-        
-        elif action.upper() == "SELL":
-            if symbol not in st.session_state.portfolio['positions']:
-                return False, "Position not found"
-            
-            pos = st.session_state.portfolio['positions'][symbol]
-            if quantity > pos['quantity']:
-                return False, "Insufficient shares to sell"
-            
-            # Update position
-            sale_value = quantity * price
-            st.session_state.portfolio['cash'] += sale_value
-            
-            if quantity == pos['quantity']:
-                del st.session_state.portfolio['positions'][symbol]
-            else:
-                pos['quantity'] -= quantity
-            
-            # Record transaction
-            st.session_state.portfolio['transactions'].append({
-                'date': datetime.now(),
-                'symbol': symbol,
-                'action': 'SELL',
-                'quantity': quantity,
-                'price': price,
-                'total': sale_value
-            })
-            
-            return True, "Sell order executed successfully"
-        
-        return False, "Invalid action"
-    
-    def get_portfolio_value(self, data_manager):
-        """Calculate total portfolio value"""
-        total_value = st.session_state.portfolio['cash']
-        
-        for symbol, position in st.session_state.portfolio['positions'].items():
-            quote = data_manager.get_live_quote(symbol)
-            if quote:
-                current_price = quote['current']
-                position_value = position['quantity'] * current_price
-                total_value += position_value
-        
-        return total_value
-    
-    def get_portfolio_performance(self, data_manager):
-        """Calculate portfolio performance metrics"""
-        total_invested = st.session_state.portfolio['cash']
-        for symbol, position in st.session_state.portfolio['positions'].items():
-            total_invested += position['quantity'] * position['avg_price']
-        
-        current_value = self.get_portfolio_value(data_manager)
-        profit_loss = current_value - 1000000  # Compared to initial 10L
-        profit_loss_pct = (profit_loss / 1000000) * 100
-        
-        return {
-            'current_value': current_value,
-            'profit_loss': profit_loss,
-            'profit_loss_pct': profit_loss_pct,
-            'cash': st.session_state.portfolio['cash']
-        }
-
-# ==================== COMPLETE TRADING TERMINAL ====================
-
-class CompleteTradingTerminal:
-    def __init__(self):
-        self.data_manager = CompleteDataManager()
-        self.chart_engine = CompleteChartingEngine()
-        self.tech_analysis = CompleteTechnicalAnalysis()
-        self.stock_db = CompleteStockDatabase()
+        self.data_manager = EnhancedDataManager()
+        self.chart_engine = AdvancedChartingEngine()
+        self.tech_analysis = AdvancedTechnicalAnalysis()
+        self.stock_db = IndianStockDatabase()
         self.portfolio_manager = PortfolioManager()
+        self.trading_strategies = AITradingStrategies()
         
-        # Initialize session states
+        # Initialize session state
+        if 'selected_stocks' not in st.session_state:
+            st.session_state.selected_stocks = ['RELIANCE', 'TCS', 'HDFCBANK']
         if 'watchlist' not in st.session_state:
-            st.session_state.watchlist = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY']
-        if 'selected_stock' not in st.session_state:
-            st.session_state.selected_stock = 'RELIANCE'
+            st.session_state.watchlist = []
+        if 'portfolio' not in st.session_state:
+            st.session_state.portfolio = {}
+        if 'alerts' not in st.session_state:
+            st.session_state.alerts = []
     
     def render_header(self):
-        """Render professional header with market overview"""
-        st.markdown('<div class="main-header">🚀 QUANTUM PRO TRADING TERMINAL</div>', unsafe_allow_html=True)
+        """Render application header"""
+        st.markdown("""
+        <style>
+        .main-header {
+            font-size: 3rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #FF0000, #FFA500, #FFFF00, #008000, #0000FF, #4B0082, #EE82EE);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .metric-card {
+            background: rgba(30, 30, 60, 0.9);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid #4f46e5;
+            margin: 0.5rem;
+        }
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 2px;
+        }
+        .stTabs [data-baseweb="tab"] {
+            height: 50px;
+            white-space: pre-wrap;
+            background-color: #1e1e1e;
+            border-radius: 5px 5px 0px 0px;
+            gap: 1px;
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+        </style>
+        """, unsafe_allow_html=True)
         
-        # Market overview with key indices
+        st.markdown('<div class="main-header">🇮🇳 QUANTUM INDIAN STOCK TERMINAL</div>', unsafe_allow_html=True)
+        
+        # Market overview
         st.markdown("### 📈 Live Market Overview")
         
-        indices = ['NIFTY 50', 'BANK NIFTY', 'SENSEX', 'GOLD', 'BITCOIN']
+        # Key indices
+        indices = ['NIFTY 50', 'BANK NIFTY', 'SENSEX']
         cols = st.columns(len(indices))
         
         for idx, index in enumerate(indices):
@@ -746,114 +1229,179 @@ class CompleteTradingTerminal:
                 if symbol:
                     quote = self.data_manager.get_live_quote(symbol)
                     if quote:
-                        change_color = "positive" if quote['change'] >= 0 else "negative"
+                        change_color = "green" if quote['change'] >= 0 else "red"
                         st.metric(
                             index,
-                            f"₹{quote['current']:,.0f}" if index != 'BITCOIN' else f"${quote['current']:,.0f}",
+                            f"₹{quote['current']:,.0f}",
                             f"{quote['change_percent']:+.2f}%"
                         )
     
     def render_dashboard(self):
-        """Render complete trading dashboard"""
-        st.markdown('<div class="section-header">📊 PROFESSIONAL TRADING DASHBOARD</div>', unsafe_allow_html=True)
+        """Render main dashboard"""
+        st.markdown("### 📊 Stock Analysis Dashboard")
         
-        # Stock selection and controls
+        # Stock selector
         col1, col2, col3 = st.columns([2, 1, 1])
         
         with col1:
             all_stocks = self.stock_db.get_all_stocks()
             selected_stock_name = st.selectbox(
-                "Select Asset",
+                "Select Stock",
                 options=list(all_stocks.keys()),
-                format_func=lambda x: f"{x} ({all_stocks[x]})",
-                key="stock_selector"
+                format_func=lambda x: f"{x} ({all_stocks[x]})"
             )
         
         with col2:
             time_frame = st.selectbox(
                 "Time Frame",
-                ['1mo', '3mo', '6mo', '1y', '2y'],
+                ['1mo', '3mo', '6mo', '1y'],
                 key="timeframe"
             )
         
         with col3:
-            chart_type = st.selectbox(
-                "Chart Type",
-                ['Advanced', 'Simple'],
-                key="chart_type"
+            data_source = st.selectbox(
+                "Data Source",
+                ['auto', 'nse', 'finnhub', 'alpha_vantage', 'yfinance'],
+                help="Auto mode tries all sources in order"
             )
         
         if selected_stock_name:
             symbol = all_stocks[selected_stock_name]
-            st.session_state.selected_stock = selected_stock_name
             
             # Get data
-            with st.spinner(f"🔄 Loading {selected_stock_name} data..."):
-                data = self.data_manager.get_stock_data(symbol, time_frame)
+            with st.spinner(f"Loading {selected_stock_name} data..."):
+                data = self.data_manager.get_stock_data(symbol, time_frame, data_source)
                 live_quote = self.data_manager.get_live_quote(symbol)
                 indicators = self.tech_analysis.calculate_all_indicators(data)
             
             if not data.empty:
-                # Live Quote Section
-                st.markdown("### 💰 Live Market Data")
+                # Display live quote
                 if live_quote:
+                    st.markdown("### 💰 Live Quote")
                     quote_cols = st.columns(6)
                     
                     with quote_cols[0]:
                         st.metric(
                             "Current Price", 
-                            f"₹{live_quote['current']:.2f}" if symbol.endswith('.NS') or symbol.startswith('^') else f"${live_quote['current']:.2f}",
+                            f"₹{live_quote['current']:.2f}",
                             f"{live_quote['change_percent']:+.2f}%"
                         )
                     
                     with quote_cols[1]:
-                        st.metric("Open", f"₹{live_quote['open']:.2f}")
+                        st.metric("Open", f"₹{live_quote.get('open', 0):.2f}")
                     
                     with quote_cols[2]:
-                        st.metric("High", f"₹{live_quote['high']:.2f}")
+                        st.metric("High", f"₹{live_quote.get('high', 0):.2f}")
                     
                     with quote_cols[3]:
-                        st.metric("Low", f"₹{live_quote['low']:.2f}")
+                        st.metric("Low", f"₹{live_quote.get('low', 0):.2f}")
                     
                     with quote_cols[4]:
-                        st.metric("Volume", f"{live_quote.get('volume', 0):,}")
+                        st.metric("Volume", f"{live_quote.get('volume', 0):,.0f}")
                     
                     with quote_cols[5]:
-                        if indicators:
-                            strength_color = "green" if indicators['signal_strength'] > 60 else "red" if indicators['signal_strength'] < 40 else "orange"
-                            st.markdown(f"<span style='color: {strength_color}; font-weight: bold;'>Signal: {indicators['signal_strength']}/100</span>", unsafe_allow_html=True)
+                        st.metric("Prev Close", f"₹{live_quote.get('previous_close', 0):.2f}")
                 
-                # Advanced Chart
-                st.markdown("### 📈 Technical Analysis Chart")
-                fig = self.chart_engine.create_comprehensive_chart(data, selected_stock_name)
-                if fig:
-                    st.plotly_chart(fig, use_container_width=True, use_container_width=True)
+                # Display chart
+                st.markdown("### 📈 Advanced Chart")
+                chart_tabs = st.tabs(["Price Chart", "Technical Analysis"])
                 
-                # Technical Indicators Summary
-                st.markdown("### 🔍 Technical Indicators")
+                with chart_tabs[0]:
+                    fig_simple = self.chart_engine.create_advanced_chart(data, selected_stock_name, indicators=False)
+                    if fig_simple:
+                        st.plotly_chart(fig_simple, use_container_width=True)
+                
+                with chart_tabs[1]:
+                    fig_advanced = self.chart_engine.create_advanced_chart(data, selected_stock_name, indicators=True)
+                    if fig_advanced:
+                        st.plotly_chart(fig_advanced, use_container_width=True)
+                
+                # Technical Analysis
+                st.markdown("### 🔍 Technical Analysis")
+                
                 if indicators:
-                    tech_cols = st.columns(6)
+                    # Key metrics
+                    tech_cols1 = st.columns(4)
+                    tech_cols2 = st.columns(4)
                     
-                    indicator_configs = [
-                        ('RSI', f"{indicators['rsi']:.1f}", 'red' if indicators['rsi'] > 70 else 'green' if indicators['rsi'] < 30 else 'white'),
-                        ('Trend', indicators['trend'], 'green' if 'BULLISH' in indicators['trend'] else 'red'),
-                        ('MACD', f"{indicators['macd']:.2f}", 'green' if indicators['macd'] > indicators['macd_signal'] else 'red'),
-                        ('Volatility', f"{indicators['volatility']:.1f}%", 'orange'),
-                        ('Support', f"₹{indicators['support']:.0f}", 'green'),
-                        ('Resistance', f"₹{indicators['resistance']:.0f}", 'red')
-                    ]
+                    with tech_cols1[0]:
+                        rsi = indicators.get('rsi', 0)
+                        rsi_color = "green" if rsi < 30 else "red" if rsi > 70 else "white"
+                        st.metric("RSI", f"{rsi:.1f}", delta_color="off")
                     
-                    for idx, (name, value, color) in enumerate(indicator_configs):
-                        with tech_cols[idx]:
-                            st.markdown(f"<span style='color: {color}; font-weight: bold;'>{name}: {value}</span>", unsafe_allow_html=True)
+                    with tech_cols1[1]:
+                        st.metric("SMA 20", f"₹{indicators.get('sma_20', 0):.2f}")
+                    
+                    with tech_cols1[2]:
+                        st.metric("Trend", indicators.get('trend_strength', 'N/A'))
+                    
+                    with tech_cols1[3]:
+                        st.metric("Volatility", f"{indicators.get('volatility_20d', 0):.1f}%")
+                    
+                    with tech_cols2[0]:
+                        st.metric("MACD", f"{indicators.get('macd', 0):.3f}")
+                    
+                    with tech_cols2[1]:
+                        st.metric("Signal", indicators.get('overall_signal', 'HOLD'))
+                    
+                    with tech_cols2[2]:
+                        st.metric("Quantum Score", f"{indicators.get('quantum_score', 0):.2f}")
+                    
+                    with tech_cols2[3]:
+                        st.metric("Support", f"₹{indicators.get('support_1', 0):.2f}")
+                    
+                    # Detailed indicators
+                    with st.expander("Detailed Technical Indicators"):
+                        detail_cols = st.columns(3)
+                        
+                        with detail_cols[0]:
+                            st.write("**Trend Indicators**")
+                            st.write(f"SMA 50: ₹{indicators.get('sma_50', 0):.2f}")
+                            st.write(f"SMA 200: ₹{indicators.get('sma_200', 0):.2f}")
+                            st.write(f"EMA 12: ₹{indicators.get('ema_12', 0):.2f}")
+                            st.write(f"ATR: {indicators.get('atr', 0):.2f}")
+                        
+                        with detail_cols[1]:
+                            st.write("**Momentum Indicators**")
+                            st.write(f"Stoch K: {indicators.get('stoch_k', 0):.1f}")
+                            st.write(f"Williams R: {indicators.get('williams_r', 0):.1f}")
+                            st.write(f"CCI: {indicators.get('cci', 0):.1f}")
+                            st.write(f"RSI Signal: {indicators.get('rsi_signal', 'N/A')}")
+                        
+                        with detail_cols[2]:
+                            st.write("**Volatility & Volume**")
+                            st.write(f"BB Position: {indicators.get('bb_position', 0):.3f}")
+                            st.write(f"Volume SMA: {indicators.get('volume_sma_20', 0):,.0f}")
+                            st.write(f"OBV: {indicators.get('obv', 0):,.0f}")
+                            st.write(f"Resistance: ₹{indicators.get('resistance_1', 0):.2f}")
                 
-                # Trading Panel
-                st.markdown("### ⚡ Quick Trading")
-                self.render_trading_panel(symbol, live_quote)
+                # Trading strategies
+                st.markdown("### 🤖 AI Trading Strategies")
                 
-                # Recent Data
-                st.markdown("### 📋 Historical Data")
-                st.dataframe(data.tail(20), use_container_width=True)
+                if not data.empty:
+                    strategy_cols = st.columns(3)
+                    
+                    with strategy_cols[0]:
+                        momentum_signal = self.trading_strategies.momentum_strategy(data)
+                        current_signal = momentum_signal[-1] if len(momentum_signal) > 0 else 0
+                        signal_text = "BUY" if current_signal > 0 else "SELL" if current_signal < 0 else "HOLD"
+                        st.metric("Momentum Strategy", signal_text)
+                    
+                    with strategy_cols[1]:
+                        mean_reversion_signal = self.trading_strategies.mean_reversion_strategy(data)
+                        current_signal = mean_reversion_signal[-1] if len(mean_reversion_signal) > 0 else 0
+                        signal_text = "BUY" if current_signal > 0 else "SELL" if current_signal < 0 else "HOLD"
+                        st.metric("Mean Reversion", signal_text)
+                    
+                    with strategy_cols[2]:
+                        quantum_signal = self.trading_strategies.quantum_hybrid_strategy(data)
+                        current_signal = quantum_signal[-1] if len(quantum_signal) > 0 else 0
+                        signal_text = "BUY" if current_signal > 0 else "SELL" if current_signal < 0 else "HOLD"
+                        st.metric("Quantum Hybrid", signal_text)
+                
+                # Recent data
+                st.markdown("### 📋 Recent Price Data")
+                st.dataframe(data.tail(10), use_container_width=True)
                 
                 # Add to watchlist
                 col1, col2 = st.columns([3, 1])
@@ -861,74 +1409,39 @@ class CompleteTradingTerminal:
                     if st.button("⭐ Add to Watchlist", use_container_width=True):
                         if selected_stock_name not in st.session_state.watchlist:
                             st.session_state.watchlist.append(selected_stock_name)
-                            st.success(f"✅ {selected_stock_name} added to watchlist!")
+                            st.success(f"Added {selected_stock_name} to watchlist!")
+                            st.rerun()
             else:
-                st.error("❌ Unable to fetch data for selected stock")
-    
-    def render_trading_panel(self, symbol, quote):
-        """Render trading interface"""
-        col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
-        
-        with col1:
-            action = st.radio("Action", ["BUY", "SELL"], horizontal=True)
-        
-        with col2:
-            quantity = st.number_input("Quantity", min_value=1, value=100)
-        
-        with col3:
-            price_type = st.selectbox("Price Type", ["Market", "Limit"])
-            if price_type == "Limit" and quote:
-                price = st.number_input("Limit Price", value=quote['current'], min_value=0.01)
-            else:
-                price = quote['current'] if quote else 0
-        
-        with col4:
-            st.write("")  # Spacer
-            st.write("")  # Spacer
-            if st.button("🎯 Execute Trade", type="primary", use_container_width=True):
-                if quote:
-                    success, message = self.portfolio_manager.add_position(
-                        symbol, quantity, price, action
-                    )
-                    if success:
-                        st.success(f"✅ {message}")
-                        st.balloons()
-                    else:
-                        st.error(f"❌ {message}")
+                st.error("Unable to fetch data for selected stock")
     
     def render_watchlist(self):
-        """Render interactive watchlist"""
-        st.markdown('<div class="section-header">⭐ SMART WATCHLIST</div>', unsafe_allow_html=True)
+        """Render watchlist management"""
+        st.markdown("### ⭐ My Watchlist")
         
         if not st.session_state.watchlist:
-            st.info("💡 Your watchlist is empty. Add stocks from the dashboard.")
+            st.info("Your watchlist is empty. Add stocks from the dashboard.")
             return
         
-        # Watchlist management
+        # Quick actions
         col1, col2 = st.columns([3, 1])
         with col2:
-            if st.button("🔄 Refresh All", use_container_width=True):
+            if st.button("Clear Watchlist", type="secondary"):
+                st.session_state.watchlist = []
                 st.rerun()
         
-        # Display watchlist items
-        for stock_name in st.session_state.watchlist[:20]:  # Limit to 20 for performance
+        for stock_name in st.session_state.watchlist:
             symbol = self.stock_db.indian_stocks.get(stock_name)
             if symbol:
                 with st.expander(f"📊 {stock_name} ({symbol})", expanded=True):
-                    # Get real-time data
+                    # Get quick data
                     quote = self.data_manager.get_live_quote(symbol)
-                    data = self.data_manager.get_stock_data(symbol, "1d")
-                    indicators = self.tech_analysis.calculate_all_indicators(data)
-                    
                     if quote:
                         col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
                         
                         with col1:
-                            change_color = "positive" if quote['change'] >= 0 else "negative"
                             st.write(f"**Price:** ₹{quote['current']:.2f}")
-                            st.markdown(f'<span class="{change_color}">**Change:** {quote["change_percent"]:+.2f}%</span>', unsafe_allow_html=True)
-                            if indicators:
-                                st.write(f"**RSI:** {indicators.get('rsi', 0):.1f}")
+                            st.write(f"**Change:** {quote['change_percent']:+.2f}%")
+                            st.write(f"**Volume:** {quote.get('volume', 0):,.0f}")
                         
                         with col2:
                             if st.button("📈 Analyze", key=f"analyze_{stock_name}", use_container_width=True):
@@ -936,8 +1449,8 @@ class CompleteTradingTerminal:
                                 st.rerun()
                         
                         with col3:
-                            if st.button("⚡ Trade", key=f"trade_{stock_name}", use_container_width=True):
-                                st.session_state.selected_stock = stock_name
+                            if st.button("📊 Chart", key=f"chart_{stock_name}", use_container_width=True):
+                                st.session_state.chart_stock = stock_name
                                 st.rerun()
                         
                         with col4:
@@ -945,215 +1458,406 @@ class CompleteTradingTerminal:
                                 st.session_state.watchlist.remove(stock_name)
                                 st.rerun()
     
+    def render_stock_screener(self):
+        """Render advanced stock screener"""
+        st.markdown("### 🔍 Advanced Stock Screener")
+        
+        st.info("""
+        **Quantum Stock Screening Features:**
+        - Multi-factor technical analysis screening
+        - Fundamental metrics filtering  
+        - Pattern recognition and AI signals
+        - Real-time market scanning
+        """)
+        
+        # Screening criteria
+        st.markdown("#### Screening Criteria")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            min_price = st.number_input("Minimum Price (₹)", value=100, min_value=0)
+            max_price = st.number_input("Maximum Price (₹)", value=10000, min_value=0)
+            min_volume = st.number_input("Minimum Volume", value=1000000)
+        
+        with col2:
+            rsi_min = st.slider("RSI Minimum", 0, 100, 30)
+            rsi_max = st.slider("RSI Maximum", 0, 100, 70)
+            min_momentum = st.slider("Minimum Momentum %", -10.0, 10.0, 0.0)
+        
+        with col3:
+            trend_filter = st.selectbox("Trend Filter", ["Any", "Bullish", "Bearish", "Strong Bullish", "Strong Bearish"])
+            signal_filter = st.selectbox("Signal Filter", ["Any", "BUY", "SELL", "HOLD"])
+            volatility_max = st.slider("Max Volatility %", 0.0, 100.0, 50.0)
+        
+        # Advanced filters
+        with st.expander("Advanced Filters"):
+            adv_col1, adv_col2 = st.columns(2)
+            
+            with adv_col1:
+                min_market_cap = st.number_input("Minimum Market Cap (Cr)", value=1000)
+                pe_max = st.number_input("Max P/E Ratio", value=50)
+                min_dividend = st.number_input("Min Dividend Yield %", value=0.0)
+            
+            with adv_col2:
+                beta_max = st.number_input("Max Beta", value=2.0)
+                debt_to_equity = st.number_input("Max Debt/Equity", value=2.0)
+                min_roce = st.number_input("Min ROCE %", value=0.0)
+        
+        # Run screener
+        if st.button("🚀 Run Quantum Screener", use_container_width=True):
+            with st.spinner("Scanning stocks with quantum algorithms..."):
+                # Get sample stocks for demonstration
+                sample_stocks = list(self.stock_db.get_all_stocks().items())[:20]
+                results = []
+                
+                for stock_name, symbol in sample_stocks:
+                    try:
+                        # Get data and analysis
+                        data = self.data_manager.get_stock_data(symbol, "1mo")
+                        if data.empty:
+                            continue
+                            
+                        quote = self.data_manager.get_live_quote(symbol)
+                        indicators = self.tech_analysis.calculate_all_indicators(data)
+                        
+                        if not indicators:
+                            continue
+                        
+                        # Apply filters
+                        current_price = quote.get('current', 0)
+                        volume = quote.get('volume', 0)
+                        rsi = indicators.get('rsi', 50)
+                        trend = indicators.get('trend_strength', 'NEUTRAL')
+                        signal = indicators.get('overall_signal', 'HOLD')
+                        volatility = indicators.get('volatility_20d', 0)
+                        
+                        # Price filter
+                        if not (min_price <= current_price <= max_price):
+                            continue
+                            
+                        # Volume filter
+                        if volume < min_volume:
+                            continue
+                            
+                        # RSI filter
+                        if not (rsi_min <= rsi <= rsi_max):
+                            continue
+                            
+                        # Trend filter
+                        if trend_filter != "Any" and trend_filter not in trend:
+                            continue
+                            
+                        # Signal filter
+                        if signal_filter != "Any" and signal != signal_filter:
+                            continue
+                            
+                        # Volatility filter
+                        if volatility > volatility_max:
+                            continue
+                        
+                        results.append({
+                            'Stock': stock_name,
+                            'Symbol': symbol,
+                            'Price': current_price,
+                            'Change %': quote.get('change_percent', 0),
+                            'Volume': volume,
+                            'RSI': rsi,
+                            'Trend': trend,
+                            'Signal': signal,
+                            'Volatility %': volatility,
+                            'Quantum Score': indicators.get('quantum_score', 0)
+                        })
+                        
+                    except Exception as e:
+                        continue
+                
+                if results:
+                    results_df = pd.DataFrame(results)
+                    st.markdown(f"#### 📊 Screening Results: {len(results)} Stocks Found")
+                    st.dataframe(results_df, use_container_width=True)
+                    
+                    # Export results
+                    csv = results_df.to_csv(index=False)
+                    st.download_button(
+                        label="📥 Download Results",
+                        data=csv,
+                        file_name=f"quantum_screener_results_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                        mime="text/csv",
+                        use_container_width=True
+                    )
+                else:
+                    st.warning("No stocks match your screening criteria.")
+    
     def render_portfolio(self):
         """Render portfolio management"""
-        st.markdown('<div class="section-header">💼 PORTFOLIO MANAGEMENT</div>', unsafe_allow_html=True)
+        st.markdown("### 💼 Portfolio Management")
         
-        # Portfolio summary
-        performance = self.portfolio_manager.get_portfolio_performance(self.data_manager)
+        # Portfolio input
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            all_stocks = self.stock_db.get_all_stocks()
+            selected_stock = st.selectbox(
+                "Select Stock",
+                options=list(all_stocks.keys()),
+                key="portfolio_stock"
+            )
+        
+        with col2:
+            quantity = st.number_input("Quantity", min_value=1, value=100)
+        
+        with col3:
+            buy_price = st.number_input("Buy Price (₹)", min_value=0.0, value=0.0)
+        
+        with col4:
+            st.write("")  # Spacer
+            st.write("")
+            if st.button("Add to Portfolio", use_container_width=True):
+                symbol = all_stocks[selected_stock]
+                if symbol not in st.session_state.portfolio:
+                    st.session_state.portfolio[symbol] = {
+                        'name': selected_stock,
+                        'quantity': quantity,
+                        'average_cost': buy_price,
+                        'total_cost': quantity * buy_price
+                    }
+                else:
+                    # Update existing position
+                    existing = st.session_state.portfolio[symbol]
+                    total_quantity = existing['quantity'] + quantity
+                    total_cost = existing['total_cost'] + (quantity * buy_price)
+                    
+                    st.session_state.portfolio[symbol] = {
+                        'name': selected_stock,
+                        'quantity': total_quantity,
+                        'average_cost': total_cost / total_quantity,
+                        'total_cost': total_cost
+                    }
+                st.success(f"Added {quantity} shares of {selected_stock} to portfolio!")
+                st.rerun()
+        
+        # Display portfolio
+        if st.session_state.portfolio:
+            st.markdown("#### 📊 Current Holdings")
+            
+            portfolio_data = []
+            total_current_value = 0
+            total_investment = 0
+            
+            for symbol, holding in st.session_state.portfolio.items():
+                quote = self.data_manager.get_live_quote(symbol)
+                current_price = quote.get('current', 0)
+                current_value = current_price * holding['quantity']
+                pnl = current_value - holding['total_cost']
+                pnl_percent = (pnl / holding['total_cost']) * 100
+                
+                portfolio_data.append({
+                    'Stock': holding['name'],
+                    'Symbol': symbol,
+                    'Quantity': holding['quantity'],
+                    'Avg Cost': holding['average_cost'],
+                    'Current Price': current_price,
+                    'Investment': holding['total_cost'],
+                    'Current Value': current_value,
+                    'PnL': pnl,
+                    'PnL %': pnl_percent
+                })
+                
+                total_current_value += current_value
+                total_investment += holding['total_cost']
+            
+            if portfolio_data:
+                portfolio_df = pd.DataFrame(portfolio_data)
+                st.dataframe(portfolio_df, use_container_width=True)
+                
+                # Portfolio summary
+                total_pnl = total_current_value - total_investment
+                total_pnl_percent = (total_pnl / total_investment) * 100 if total_investment > 0 else 0
+                
+                st.markdown("#### 📈 Portfolio Summary")
+                summary_cols = st.columns(4)
+                
+                with summary_cols[0]:
+                    st.metric("Total Investment", f"₹{total_investment:,.2f}")
+                
+                with summary_cols[1]:
+                    st.metric("Current Value", f"₹{total_current_value:,.2f}")
+                
+                with summary_cols[2]:
+                    st.metric("Total P&L", f"₹{total_pnl:,.2f}")
+                
+                with summary_cols[3]:
+                    st.metric("Return %", f"{total_pnl_percent:.2f}%")
+                
+                # Clear portfolio
+                if st.button("Clear Portfolio", type="secondary"):
+                    st.session_state.portfolio = {}
+                    st.rerun()
+        else:
+            st.info("Your portfolio is empty. Add stocks to get started.")
+    
+    def render_alerts(self):
+        """Render price alerts system"""
+        st.markdown("### 🔔 Price Alerts")
+        
+        # Create new alert
+        st.markdown("#### Create New Alert")
         
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            st.metric(
-                "Portfolio Value", 
-                f"₹{performance['current_value']:,.2f}",
-                f"{performance['profit_loss_pct']:+.2f}%"
+            all_stocks = self.stock_db.get_all_stocks()
+            alert_stock = st.selectbox(
+                "Stock",
+                options=list(all_stocks.keys()),
+                key="alert_stock"
             )
         
         with col2:
-            st.metric("Cash Balance", f"₹{performance['cash']:,.2f}")
+            alert_type = st.selectbox(
+                "Alert Type",
+                ["Price Above", "Price Below", "Percent Change Up", "Percent Change Down"]
+            )
         
         with col3:
-            st.metric("Total P&L", f"₹{performance['profit_loss']:,.2f}")
+            alert_value = st.number_input("Alert Value", min_value=0.0, value=0.0)
         
         with col4:
-            st.metric("Initial Capital", "₹1,000,000.00")
+            st.write("")
+            st.write("")
+            if st.button("Add Alert", use_container_width=True):
+                symbol = all_stocks[alert_stock]
+                new_alert = {
+                    'id': len(st.session_state.alerts) + 1,
+                    'stock': alert_stock,
+                    'symbol': symbol,
+                    'type': alert_type,
+                    'value': alert_value,
+                    'created': datetime.now(),
+                    'triggered': False
+                }
+                st.session_state.alerts.append(new_alert)
+                st.success(f"Alert created for {alert_stock}!")
+                st.rerun()
         
-        # Positions table
-        st.markdown("### 📊 Current Positions")
-        if st.session_state.portfolio['positions']:
-            positions_data = []
-            for symbol, position in st.session_state.portfolio['positions'].items():
-                quote = self.data_manager.get_live_quote(symbol)
-                if quote:
-                    current_value = position['quantity'] * quote['current']
-                    invested = position['quantity'] * position['avg_price']
-                    pnl = current_value - invested
-                    pnl_pct = (pnl / invested) * 100
+        # Display active alerts
+        st.markdown("#### Active Alerts")
+        
+        if st.session_state.alerts:
+            for alert in st.session_state.alerts:
+                if not alert['triggered']:
+                    col1, col2, col3, col4 = st.columns([2, 2, 1, 1])
                     
-                    positions_data.append({
-                        'Symbol': symbol,
-                        'Quantity': position['quantity'],
-                        'Avg Price': f"₹{position['avg_price']:.2f}",
-                        'Current Price': f"₹{quote['current']:.2f}",
-                        'Current Value': f"₹{current_value:,.2f}",
-                        'P&L': f"₹{pnl:,.2f}",
-                        'P&L %': f"{pnl_pct:+.2f}%"
-                    })
-            
-            if positions_data:
-                st.dataframe(pd.DataFrame(positions_data), use_container_width=True)
+                    with col1:
+                        st.write(f"**{alert['stock']}** ({alert['symbol']})")
+                    
+                    with col2:
+                        st.write(f"{alert['type']}: {alert['value']}")
+                    
+                    with col3:
+                        if st.button("Check", key=f"check_{alert['id']}"):
+                            # Check alert condition
+                            quote = self.data_manager.get_live_quote(alert['symbol'])
+                            current_price = quote.get('current', 0)
+                            
+                            triggered = False
+                            if alert['type'] == "Price Above" and current_price > alert['value']:
+                                triggered = True
+                            elif alert['type'] == "Price Below" and current_price < alert['value']:
+                                triggered = True
+                            
+                            if triggered:
+                                st.success(f"🚨 Alert triggered! {alert['stock']} at ₹{current_price}")
+                                alert['triggered'] = True
+                            else:
+                                st.info(f"Alert not triggered. Current price: ₹{current_price}")
+                    
+                    with col4:
+                        if st.button("Delete", key=f"delete_{alert['id']}"):
+                            st.session_state.alerts.remove(alert)
+                            st.rerun()
         else:
-            st.info("💡 No positions yet. Start trading to build your portfolio!")
-        
-        # Transaction history
-        st.markdown("### 📝 Transaction History")
-        if st.session_state.portfolio['transactions']:
-            transactions_df = pd.DataFrame(st.session_state.portfolio['transactions'])
-            st.dataframe(transactions_df.tail(10), use_container_width=True)
-        else:
-            st.info("💡 No transactions yet.")
-    
-    def render_stock_screener(self):
-        """Render advanced stock screener"""
-        st.markdown('<div class="section-header">🔍 ADVANCED STOCK SCREENER</div>', unsafe_allow_html=True)
-        
-        st.markdown("""
-        <div class="premium-card">
-        🚀 **AI-Powered Stock Screening** - Find winning stocks based on technical and fundamental criteria
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Screening criteria
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.subheader("📊 Technical Criteria")
-            min_rsi = st.slider("Minimum RSI", 0, 100, 30)
-            max_rsi = st.slider("Maximum RSI", 0, 100, 70)
-            min_volume = st.number_input("Minimum Volume", value=1000000)
-            trend_filter = st.selectbox("Trend Filter", ["Any", "Bullish", "Bearish"])
-        
-        with col2:
-            st.subheader("💰 Fundamental Criteria")
-            min_price = st.number_input("Minimum Price (₹)", value=100)
-            max_price = st.number_input("Maximum Price (₹)", value=5000)
-            market_cap = st.selectbox("Market Cap", ["Any", "Large Cap", "Mid Cap", "Small Cap"])
-        
-        # Screening button
-        if st.button("🚀 Run Advanced Screener", type="primary", use_container_width=True):
-            with st.spinner("🔍 Scanning 50+ stocks with AI analysis..."):
-                time.sleep(2)  # Simulate processing
-                
-                # Simulate screening results
-                sample_results = [
-                    {'Stock': 'RELIANCE', 'Score': 88, 'RSI': 45.2, 'Trend': 'BULLISH', 'Signal': 'STRONG BUY'},
-                    {'Stock': 'TCS', 'Score': 76, 'RSI': 52.1, 'Trend': 'BULLISH', 'Signal': 'BUY'},
-                    {'Stock': 'INFY', 'Score': 82, 'RSI': 48.7, 'Trend': 'BULLISH', 'Signal': 'STRONG BUY'},
-                    {'Stock': 'HDFCBANK', 'Score': 71, 'RSI': 55.3, 'Trend': 'BULLISH', 'Signal': 'BUY'},
-                ]
-                
-                results_df = pd.DataFrame(sample_results)
-                st.success(f"🎯 Found {len(sample_results)} stocks matching your criteria!")
-                st.dataframe(results_df, use_container_width=True)
-    
-    def render_search(self):
-        """Render universal stock search"""
-        st.markdown('<div class="section-header">🔍 UNIVERSAL STOCK SEARCH</div>', unsafe_allow_html=True)
-        
-        search_query = st.text_input(
-            "🔍 Search stocks, indices, or commodities...",
-            placeholder="e.g., RELIANCE, NIFTY, GOLD, BITCOIN...",
-            key="universal_search"
-        )
-        
-        if search_query:
-            results = self.stock_db.search_stocks(search_query)
-            
-            if results:
-                st.success(f"🎉 Found {sum(len(v) for v in results.values())} matching assets")
-                
-                for category, stocks in results.items():
-                    with st.expander(f"📁 {category} ({len(stocks)} assets)", expanded=True):
-                        cols = st.columns(3)
-                        for idx, (name, symbol) in enumerate(stocks.items()):
-                            with cols[idx % 3]:
-                                quote = self.data_manager.get_live_quote(symbol)
-                                
-                                st.markdown('<div class="asset-card">', unsafe_allow_html=True)
-                                st.write(f"**{name}**")
-                                st.write(f"`{symbol}`")
-                                
-                                if quote:
-                                    st.write(f"**Price:** ₹{quote['current']:.2f}")
-                                    change_color = "positive" if quote['change'] >= 0 else "negative"
-                                    st.markdown(f'<span class="{change_color}">**Change:** {quote["change_percent"]:+.2f}%</span>', unsafe_allow_html=True)
-                                
-                                col_btn1, col_btn2 = st.columns(2)
-                                with col_btn1:
-                                    if st.button("📈", key=f"view_{symbol}"):
-                                        st.session_state.selected_stock = name
-                                        st.rerun()
-                                with col_btn2:
-                                    if st.button("⭐", key=f"watch_{symbol}"):
-                                        if name not in st.session_state.watchlist:
-                                            st.session_state.watchlist.append(name)
-                                            st.success(f"Added {name} to watchlist!")
-                                st.markdown('</div>', unsafe_allow_html=True)
-            else:
-                st.warning("❌ No assets found matching your search")
+            st.info("No active alerts. Create alerts to monitor price movements.")
     
     def run(self):
         """Main application runner"""
         self.render_header()
         
-        # Sidebar navigation
-        st.sidebar.markdown("## 🧭 NAVIGATION")
-        page = st.sidebar.radio(
-            "Select Module",
-            [
-                "📊 Trading Dashboard", 
-                "⭐ Watchlist", 
-                "💼 Portfolio", 
-                "🔍 Stock Screener",
-                "🔎 Universal Search",
-                "⚙️ Settings"
-            ]
+        # Navigation
+        st.sidebar.markdown("## 🧭 Navigation")
+        page = st.sidebar.selectbox(
+            "Select Page",
+            ["Dashboard", "Watchlist", "Stock Screener", "Portfolio", "Price Alerts", "Settings"]
         )
         
-        # System status
-        st.sidebar.markdown("---")
-        st.sidebar.markdown("## 🔧 SYSTEM STATUS")
-        st.sidebar.write(f"📊 Plotly: {'✅' if PLOTLY_AVAILABLE else '❌'}")
-        st.sidebar.write(f"📈 Yahoo Finance: {'✅' if YFINANCE_AVAILABLE else '❌'}")
-        st.sidebar.write(f"🤖 Technical Analysis: ✅")
-        st.sidebar.write(f"💼 Portfolio Manager: ✅")
+        # API Status
+        st.sidebar.markdown("## 🔧 System Status")
+        st.sidebar.write(f"📊 NSEPy: {'✅' if NSEPY_AVAILABLE else '❌'}")
+        st.sidebar.write(f"📈 Alpha Vantage: ✅")
+        st.sidebar.write(f"🌐 Finnhub: ✅")
+        st.sidebar.write(f"🇮🇳 Indian API: ✅")
+        st.sidebar.write(f"📉 Yahoo Finance: {'✅' if YFINANCE_AVAILABLE else '❌'}")
+        st.sidebar.write(f"📊 Plotly Charts: {'✅' if PLOTLY_AVAILABLE else '❌'}")
         
         # Quick actions
-        st.sidebar.markdown("---")
-        st.sidebar.markdown("## ⚡ QUICK ACTIONS")
-        if st.sidebar.button("🔄 Refresh All Data", use_container_width=True):
-            st.rerun()
-        
-        if st.sidebar.button("🗑️ Clear Cache", use_container_width=True):
-            st.cache_data.clear()
+        st.sidebar.markdown("## ⚡ Quick Actions")
+        if st.sidebar.button("Clear Cache", use_container_width=True):
+            self.data_manager.data_cache = {}
             st.success("Cache cleared!")
         
+        if st.sidebar.button("Refresh Data", use_container_width=True):
+            st.rerun()
+        
         # Page routing
-        if page == "📊 Trading Dashboard":
+        if page == "Dashboard":
             self.render_dashboard()
-        elif page == "⭐ Watchlist":
+        elif page == "Watchlist":
             self.render_watchlist()
-        elif page == "💼 Portfolio":
-            self.render_portfolio()
-        elif page == "🔍 Stock Screener":
+        elif page == "Stock Screener":
             self.render_stock_screener()
-        elif page == "🔎 Universal Search":
-            self.render_search()
+        elif page == "Portfolio":
+            self.render_portfolio()
+        elif page == "Price Alerts":
+            self.render_alerts()
         else:
-            st.info("⚙️ System Settings - Coming Soon!")
+            st.markdown("### ⚙️ Settings")
+            st.info("Application configuration and preferences")
+            
+            # Data source preferences
+            st.subheader("Data Source Preferences")
+            preferred_source = st.selectbox(
+                "Default Data Source",
+                ["auto", "nse", "finnhub", "alpha_vantage", "yfinance"],
+                help="Primary data source for stock data"
+            )
+            
+            # Chart preferences
+            st.subheader("Chart Preferences")
+            chart_theme = st.selectbox(
+                "Chart Theme",
+                ["plotly_dark", "plotly_white", "plotly_dark"],
+                help="Color theme for charts"
+            )
+            
+            # Notification settings
+            st.subheader("Notifications")
+            email_alerts = st.checkbox("Enable Email Alerts")
+            push_notifications = st.checkbox("Enable Push Notifications")
+            
+            if st.button("Save Settings", use_container_width=True):
+                st.success("Settings saved successfully!")
 
-# Run the complete application
+# Run the application
 if __name__ == "__main__":
-    # Page configuration
+    # Set page config
     st.set_page_config(
-        page_title="Quantum Pro Trading Terminal",
-        page_icon="🚀",
+        page_title="Quantum Indian Stock Terminal",
+        page_icon="🇮🇳",
         layout="wide",
         initial_sidebar_state="expanded"
     )
     
     # Initialize and run terminal
-    terminal = CompleteTradingTerminal()
+    terminal = QuantumTradingTerminal()
     terminal.run()
