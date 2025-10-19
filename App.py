@@ -986,7 +986,7 @@ class QuantumTradingTerminalPro:
             fig = self.charting_engine.create_advanced_chart(data, chart_type, [], asset_name)
         
         if fig:
-            st.plotly_chart(fig, use_container_width=True)  # FIXED: Removed duplicate parameter
+            st.plotly_chart(fig, use_container_width=True)
         
         # Quick metrics
         col1, col2, col3 = st.columns(3)
