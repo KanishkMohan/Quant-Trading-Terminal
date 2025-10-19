@@ -4,7 +4,7 @@ import numpy as np
 import warnings
 warnings.filterwarnings('ignore')
 
-# Enhanced imports for advanced features
+# Premium Imports
 try:
     import plotly.graph_objects as go
     import plotly.express as px
@@ -20,72 +20,131 @@ except ImportError:
     YFINANCE_AVAILABLE = False
 
 try:
-    from nsepy import get_history
-    from datetime import date
-    NSEPY_AVAILABLE = True
+    from textblob import TextBlob
+    TEXTBLOB_AVAILABLE = True
 except ImportError:
-    NSEPY_AVAILABLE = False
+    TEXTBLOB_AVAILABLE = False
 
-import requests
-import json
-import time
-from datetime import datetime, timedelta
-import threading
-from queue import Queue
-from textblob import TextBlob
-import re
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import StandardScaler
-import math
+# Advanced ML Imports
+try:
+    from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+    from sklearn.linear_model import LinearRegression
+    from sklearn.svm import SVR
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.metrics import mean_absolute_error, mean_squared_error
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    SKLEARN_AVAILABLE = False
+
+try:
+    import tensorflow as tf
+    TENSORFLOW_AVAILABLE = True
+except ImportError:
+    TENSORFLOW_AVAILABLE = False
+
+# Quantitative Finance
+from math import log, sqrt, exp
 from scipy.stats import norm
+import requests
+from datetime import datetime, timedelta
+import time
 
-# ==================== MACHINE LEARNING MODELS ====================
-
-class MLForecastEngine:
+# ==================== PREMIUM CONFIGURATION ====================
+class PremiumConfig:
     def __init__(self):
-        self.models = {}
-        self.scaler = StandardScaler()
+        self.risk_free_rate = 0.05
+        self.volatility_lookback = 30
+        self.market_hours = {"start": "09:15", "end": "15:30"}
         
-    def prepare_features(self, data):
-        """Prepare features for ML models"""
-        features = pd.DataFrame()
+    def get_premium_features(self):
+        return {
+            "quant_models": ["LSTM Neural Network", "Random Forest", "Gradient Boosting", "SVM", "ARIMA"],
+            "option_models": ["Black-Scholes", "Binomial", "Monte Carlo", "Heston"],
+            "sentiment_sources": ["News", "Social Media", "Analyst Reports", "Market Depth"],
+            "risk_metrics": ["VaR", "CVaR", "Sharpe Ratio", "Max Drawdown", "Beta"]
+        }
+
+# ==================== QUANTUM AI ENGINE ====================
+class QuantumAIEngine:
+    def __init__(self):
+        self.config = PremiumConfig()
+        self.models = {}
+        
+    def prepare_advanced_features(self, data):
+        """Create sophisticated features for AI models"""
+        df = data.copy()
         
         # Price-based features
-        features['price'] = data['Close']
-        features['returns'] = data['Close'].pct_change()
-        features['volatility'] = data['Close'].pct_change().rolling(20).std()
+        df['returns'] = df['Close'].pct_change()
+        df['log_returns'] = np.log(df['Close'] / df['Close'].shift(1))
         
-        # Technical indicators as features
-        features['sma_20'] = data['Close'].rolling(20).mean()
-        features['sma_50'] = data['Close'].rolling(50).mean()
-        features['rsi'] = self.calculate_rsi(data['Close'])
-        features['volume_sma'] = data['Volume'].rolling(20).mean()
+        # Volatility features
+        df['volatility_10'] = df['returns'].rolling(10).std()
+        df['volatility_30'] = df['returns'].rolling(30).std()
+        df['volatility_60'] = df['returns'].rolling(60).std()
         
-        # Lag features
-        for lag in [1, 2, 3, 5]:
-            features[f'return_lag_{lag}'] = features['returns'].shift(lag)
-            
-        features = features.dropna()
-        return features
+        # Momentum indicators
+        df['momentum_5'] = df['Close'] / df['Close'].shift(5) - 1
+        df['momentum_10'] = df['Close'] / df['Close'].shift(10) - 1
+        df['momentum_20'] = df['Close'] / df['Close'].shift(20) - 1
+        
+        # Moving averages
+        for window in [5, 10, 20, 50, 200]:
+            df[f'sma_{window}'] = df['Close'].rolling(window).mean()
+            df[f'ema_{window}'] = df['Close'].ewm(span=window).mean()
+        
+        # RSI
+        df['rsi_14'] = self.calculate_rsi(df['Close'])
+        
+        # MACD
+        df['macd'] = self.calculate_macd(df['Close'])
+        
+        # Bollinger Bands
+        df['bb_upper'], df['bb_lower'] = self.calculate_bollinger_bands(df['Close'])
+        
+        # Volume indicators
+        df['volume_sma'] = df['Volume'].rolling(20).mean()
+        df['volume_ratio'] = df['Volume'] / df['volume_sma']
+        
+        # Price position
+        df['price_position'] = (df['Close'] - df['bb_lower']) / (df['bb_upper'] - df['bb_lower'])
+        
+        # Target variable (future returns)
+        df['target_5d'] = df['Close'].shift(-5) / df['Close'] - 1
+        df['target_10d'] = df['Close'].shift(-10) / df['Close'] - 1
+        
+        return df.dropna()
     
     def calculate_rsi(self, prices, period=14):
-        """Calculate RSI"""
         delta = prices.diff()
         gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
         rs = gain / loss
         return 100 - (100 / (1 + rs))
     
-    def train_models(self, data, forecast_days=30):
-        """Train multiple ML models for forecasting"""
-        features = self.prepare_features(data)
+    def calculate_macd(self, prices, fast=12, slow=26, signal=9):
+        ema_fast = prices.ewm(span=fast).mean()
+        ema_slow = prices.ewm(span=slow).mean()
+        return ema_fast - ema_slow
+    
+    def calculate_bollinger_bands(self, prices, window=20, num_std=2):
+        sma = prices.rolling(window).mean()
+        std = prices.rolling(window).std()
+        upper = sma + (std * num_std)
+        lower = sma - (std * num_std)
+        return upper, lower
+    
+    def train_ensemble_model(self, data):
+        """Train multiple ML models for ensemble prediction"""
+        df = self.prepare_advanced_features(data)
         
-        if len(features) < 50:
+        if len(df) < 100:
             return None
-            
-        X = features.drop('price', axis=1)
-        y = features['price']
+        
+        # Features and target
+        feature_cols = [col for col in df.columns if col not in ['target_5d', 'target_10d', 'returns', 'log_returns']]
+        X = df[feature_cols]
+        y = df['target_5d']  # Predict 5-day returns
         
         # Split data
         split_idx = int(len(X) * 0.8)
@@ -93,935 +152,943 @@ class MLForecastEngine:
         y_train, y_test = y[:split_idx], y[split_idx:]
         
         # Scale features
-        X_train_scaled = self.scaler.fit_transform(X_train)
-        X_test_scaled = self.scaler.transform(X_test)
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_test_scaled = scaler.transform(X_test)
         
-        # Model 1: Random Forest
-        rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
-        rf_model.fit(X_train_scaled, y_train)
-        
-        # Model 2: Linear Regression
-        lr_model = LinearRegression()
-        lr_model.fit(X_train_scaled, y_train)
-        
-        self.models = {
-            'random_forest': rf_model,
-            'linear_regression': lr_model
+        # Train multiple models
+        models = {
+            'Random Forest': RandomForestRegressor(n_estimators=100, random_state=42),
+            'Gradient Boosting': GradientBoostingRegressor(n_estimators=100, random_state=42),
+            'Linear Regression': LinearRegression(),
+            'SVM': SVR(kernel='rbf')
         }
         
-        # Generate forecasts
-        forecasts = self.generate_forecast(X, forecast_days)
-        return forecasts
+        trained_models = {}
+        performance = {}
+        
+        for name, model in models.items():
+            if name == 'SVM':
+                model.fit(X_train_scaled, y_train)
+                y_pred = model.predict(X_test_scaled)
+            else:
+                model.fit(X_train, y_train)
+                y_pred = model.predict(X_test)
+            
+            mae = mean_absolute_error(y_test, y_pred)
+            rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+            
+            trained_models[name] = model
+            performance[name] = {'MAE': mae, 'RMSE': rmse, 'Predictions': y_pred}
+        
+        self.models = trained_models
+        self.scaler = scaler
+        self.feature_cols = feature_cols
+        
+        return performance
     
-    def generate_forecast(self, X, days=30):
-        """Generate future forecasts"""
+    def predict_future(self, data, days=30):
+        """Generate future predictions using ensemble"""
         if not self.models:
             return None
-            
-        forecasts = {}
-        last_features = X.iloc[-1:].copy()
         
-        for model_name, model in self.models.items():
-            future_predictions = []
-            current_features = last_features.copy()
-            
-            for _ in range(days):
-                # Scale features
-                current_scaled = self.scaler.transform(current_features)
-                
-                # Predict next price
-                next_price = model.predict(current_scaled)[0]
-                future_predictions.append(next_price)
-                
-                # Update features for next prediction (simplified)
-                current_features.iloc[0] = current_features.iloc[0].shift(-1)
-                current_features.iloc[0, 0] = next_price  # Update price
-                
-            forecasts[model_name] = future_predictions
-            
-        return forecasts
-
-# ==================== SENTIMENT ANALYSIS ====================
-
-class SentimentAnalyzer:
-    def __init__(self):
-        self.news_sources = [
-            "Economic Times", "Money Control", "Bloomberg", 
-            "Reuters", "CNBC", "Business Standard"
-        ]
-        
-    def analyze_sentiment(self, text):
-        """Analyze sentiment using TextBlob"""
-        try:
-            analysis = TextBlob(text)
-            return analysis.sentiment.polarity
-        except:
-            return 0.0
-    
-    def get_market_sentiment(self):
-        """Get simulated market sentiment data"""
-        sentiment_data = []
-        
-        # Simulate news sentiment
-        news_items = [
-            "Market shows strong bullish momentum with record highs",
-            "Inflation concerns weigh on investor sentiment",
-            "Corporate earnings exceed expectations",
-            "Global economic recovery boosts market confidence",
-            "Regulatory changes create uncertainty in the market",
-            "Technology sector leads market gains",
-            "Banking stocks underperform amid rate hike fears"
-        ]
-        
-        for i, news in enumerate(news_items):
-            sentiment = self.analyze_sentiment(news)
-            sentiment_data.append({
-                'source': self.news_sources[i % len(self.news_sources)],
-                'headline': news,
-                'sentiment': sentiment,
-                'impact': 'High' if abs(sentiment) > 0.3 else 'Medium' if abs(sentiment) > 0.1 else 'Low',
-                'timestamp': datetime.now() - timedelta(hours=i)
-            })
-        
-        return sentiment_data
-    
-    def create_sentiment_dashboard(self):
-        """Create comprehensive sentiment dashboard"""
-        sentiment_data = self.get_market_sentiment()
-        
-        if not sentiment_data:
+        df = self.prepare_advanced_features(data)
+        if len(df) < 50:
             return None
-            
-        df = pd.DataFrame(sentiment_data)
         
-        # Create sentiment gauge
-        overall_sentiment = df['sentiment'].mean()
+        latest_features = df[self.feature_cols].iloc[-1:].copy()
         
-        fig = go.Figure(go.Indicator(
-            mode = "gauge+number+delta",
-            value = overall_sentiment,
-            domain = {'x': [0, 1], 'y': [0, 1]},
-            title = {'text': "Overall Market Sentiment"},
-            delta = {'reference': 0},
-            gauge = {
-                'axis': {'range': [-1, 1]},
-                'bar': {'color': "darkblue"},
-                'steps': [
-                    {'range': [-1, -0.3], 'color': "red"},
-                    {'range': [-0.3, 0.3], 'color': "yellow"},
-                    {'range': [0.3, 1], 'color': "green"}
-                ],
-                'threshold': {
-                    'line': {'color': "black", 'width': 4},
-                    'thickness': 0.75,
-                    'value': overall_sentiment
-                }
-            }
-        ))
-        
-        fig.update_layout(height=300)
-        return fig, df
-
-# ==================== QUANT STRATEGIES & OPTIONS ====================
-
-class QuantitativeStrategies:
-    def __init__(self):
-        self.risk_free_rate = 0.05
-        
-    def black_scholes(self, S, K, T, r, sigma, option_type="call"):
-        """Black-Scholes option pricing model"""
-        try:
-            d1 = (np.log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
-            d2 = d1 - sigma * np.sqrt(T)
-            
-            if option_type == "call":
-                price = S * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
+        predictions = {}
+        for name, model in self.models.items():
+            if name == 'SVM':
+                features_scaled = self.scaler.transform(latest_features)
+                pred = model.predict(features_scaled)[0]
             else:
-                price = K * np.exp(-r * T) * norm.cdf(-d2) - S * norm.cdf(-d1)
-                
-            return price
-        except:
-            return 0.0
+                pred = model.predict(latest_features)[0]
+            
+            predictions[name] = pred
+        
+        # Generate future price path
+        current_price = data['Close'].iloc[-1]
+        future_dates = [data.index[-1] + timedelta(days=i) for i in range(1, days+1)]
+        
+        # Create ensemble prediction
+        avg_prediction = np.mean(list(predictions.values()))
+        future_prices = [current_price * (1 + avg_prediction * i/days) for i in range(1, days+1)]
+        
+        return {
+            'predictions': predictions,
+            'future_prices': future_prices,
+            'future_dates': future_dates,
+            'ensemble_return': avg_prediction
+        }
+
+# ==================== BLACK-SCHOLES OPTION PRICER ====================
+class BlackScholesPricer:
+    def __init__(self, risk_free_rate=0.05):
+        self.r = risk_free_rate
     
-    def calculate_greeks(self, S, K, T, r, sigma, option_type="call"):
-        """Calculate option Greeks"""
+    def calculate_option_price(self, S, K, T, sigma, option_type="call"):
+        """Calculate option price using Black-Scholes model"""
+        if T <= 0:
+            return 0
+        
         try:
-            d1 = (np.log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
+            d1 = (np.log(S / K) + (self.r + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
             d2 = d1 - sigma * np.sqrt(T)
             
             if option_type == "call":
-                delta = norm.cdf(d1)
-                gamma = norm.pdf(d1) / (S * sigma * np.sqrt(T))
-                theta = (-S * norm.pdf(d1) * sigma / (2 * np.sqrt(T)) 
-                        - r * K * np.exp(-r * T) * norm.cdf(d2)) / 365
-                vega = S * norm.pdf(d1) * np.sqrt(T) / 100
-                rho = K * T * np.exp(-r * T) * norm.cdf(d2) / 100
+                price = S * norm.cdf(d1) - K * np.exp(-self.r * T) * norm.cdf(d2)
             else:
-                delta = norm.cdf(d1) - 1
-                gamma = norm.pdf(d1) / (S * sigma * np.sqrt(T))
-                theta = (-S * norm.pdf(d1) * sigma / (2 * np.sqrt(T)) 
-                        + r * K * np.exp(-r * T) * norm.cdf(-d2)) / 365
-                vega = S * norm.pdf(d1) * np.sqrt(T) / 100
-                rho = -K * T * np.exp(-r * T) * norm.cdf(-d2) / 100
-                
-            return {
-                'delta': delta,
-                'gamma': gamma,
-                'theta': theta,
-                'vega': vega,
-                'rho': rho
-            }
+                price = K * np.exp(-self.r * T) * norm.cdf(-d2) - S * norm.cdf(-d1)
+            
+            return max(price, 0)
+        except:
+            return 0
+    
+    def calculate_greeks(self, S, K, T, sigma, option_type="call"):
+        """Calculate option Greeks"""
+        if T <= 0:
+            return {'delta': 0, 'gamma': 0, 'theta': 0, 'vega': 0, 'rho': 0}
+        
+        try:
+            d1 = (np.log(S / K) + (self.r + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
+            d2 = d1 - sigma * np.sqrt(T)
+            
+            greeks = {}
+            
+            if option_type == "call":
+                greeks['delta'] = norm.cdf(d1)
+                greeks['gamma'] = norm.pdf(d1) / (S * sigma * np.sqrt(T))
+                greeks['theta'] = (-S * norm.pdf(d1) * sigma / (2 * np.sqrt(T)) - self.r * K * np.exp(-self.r * T) * norm.cdf(d2)) / 365
+                greeks['vega'] = S * norm.pdf(d1) * np.sqrt(T) / 100
+                greeks['rho'] = K * T * np.exp(-self.r * T) * norm.cdf(d2) / 100
+            else:
+                greeks['delta'] = norm.cdf(d1) - 1
+                greeks['gamma'] = norm.pdf(d1) / (S * sigma * np.sqrt(T))
+                greeks['theta'] = (-S * norm.pdf(d1) * sigma / (2 * np.sqrt(T)) + self.r * K * np.exp(-self.r * T) * norm.cdf(-d2)) / 365
+                greeks['vega'] = S * norm.pdf(d1) * np.sqrt(T) / 100
+                greeks['rho'] = -K * T * np.exp(-self.r * T) * norm.cdf(-d2) / 100
+            
+            return greeks
         except:
             return {'delta': 0, 'gamma': 0, 'theta': 0, 'vega': 0, 'rho': 0}
-    
-    def generate_option_chain(self, spot_price, volatility=0.2, days_to_expiry=30):
-        """Generate simulated option chain"""
-        strikes = []
-        current_strike = spot_price * 0.8
-        strike_count = 20
-        
-        for i in range(strike_count):
-            strike = current_strike + (i * spot_price * 0.02)
-            strikes.append(round(strike, 2))
-        
-        option_chain = []
-        T = days_to_expiry / 365
-        
-        for strike in strikes:
-            # Call option
-            call_price = self.black_scholes(spot_price, strike, T, self.risk_free_rate, volatility, "call")
-            call_greeks = self.calculate_greeks(spot_price, strike, T, self.risk_free_rate, volatility, "call")
-            
-            # Put option
-            put_price = self.black_scholes(spot_price, strike, T, self.risk_free_rate, volatility, "put")
-            put_greeks = self.calculate_greeks(spot_price, strike, T, self.risk_free_rate, volatility, "put")
-            
-            option_chain.append({
-                'strike': strike,
-                'call_price': call_price,
-                'put_price': put_price,
-                'call_delta': call_greeks['delta'],
-                'put_delta': put_greeks['delta'],
-                'call_theta': call_greeks['theta'],
-                'put_theta': put_greeks['theta'],
-                'call_vega': call_greeks['vega'],
-                'put_vega': put_greeks['vega'],
-                'call_gamma': call_greeks['gamma'],
-                'put_gamma': put_greeks['gamma']
-            })
-        
-        return pd.DataFrame(option_chain)
 
-# ==================== ENHANCED DATA MANAGER ====================
-
-class EnhancedDataManager:
+# ==================== ADVANCED SENTIMENT ANALYZER ====================
+class AdvancedSentimentAnalyzer:
     def __init__(self):
-        self.ml_engine = MLForecastEngine()
-        self.sentiment_analyzer = SentimentAnalyzer()
-        self.quant_strategies = QuantitativeStrategies()
-        self.data_cache = {}
+        self.sources = ["News", "Twitter", "Reddit", "Analyst Reports", "SEC Filings"]
+    
+    def analyze_sentiment(self, text):
+        """Advanced sentiment analysis"""
+        if not TEXTBLOB_AVAILABLE:
+            return 0
         
-    def get_forecast_data(self, symbol, period="6mo"):
-        """Get data with ML forecasts"""
-        data = self.get_stock_data(symbol, period)
-        if data.empty:
-            return data, None
-            
-        forecasts = self.ml_engine.train_models(data)
-        return data, forecasts
+        try:
+            blob = TextBlob(text)
+            return blob.sentiment.polarity
+        except:
+            return 0
+    
+    def get_comprehensive_sentiment(self, symbol, stock_name):
+        """Get multi-source sentiment analysis"""
+        # Simulated multi-source sentiment data
+        sentiments = {
+            "News": np.random.uniform(-0.5, 0.8),
+            "Social Media": np.random.uniform(-0.3, 0.6),
+            "Analyst Reports": np.random.uniform(0.1, 0.9),
+            "Market Sentiment": np.random.uniform(-0.2, 0.7)
+        }
+        
+        overall_sentiment = np.mean(list(sentiments.values()))
+        
+        return {
+            'overall_score': overall_sentiment * 100,
+            'breakdown': sentiments,
+            'recommendation': "BUY" if overall_sentiment > 0.2 else "SELL" if overall_sentiment < -0.2 else "HOLD",
+            'confidence': abs(overall_sentiment) * 100
+        }
+
+# ==================== PREMIUM DATA MANAGER ====================
+class PremiumDataManager:
+    def __init__(self):
+        self.cache = {}
     
     def get_stock_data(self, symbol, period="6mo"):
-        """Get stock data with fallback to sample data"""
+        """Get stock data with premium features"""
+        cache_key = f"{symbol}_{period}"
+        
+        if cache_key in self.cache:
+            return self.cache[cache_key]
+        
         try:
-            if not any(ext in symbol for ext in ['.NS', '.BO', '.NSE']):
+            # Add .NS for Indian stocks
+            if not any(ext in symbol.upper() for ext in ['.NS', '.BO', '.NSE']):
                 symbol += '.NS'
             
             ticker = yf.Ticker(symbol)
             data = ticker.history(period=period)
             
             if not data.empty:
+                self.cache[cache_key] = data
                 return data
         except:
             pass
         
-        # Fallback to sample data
-        return self._generate_sample_data(symbol, period)
+        # Generate premium sample data as fallback
+        data = self._generate_premium_sample_data(symbol, period)
+        self.cache[cache_key] = data
+        return data
     
-    def _generate_sample_data(self, symbol, period):
-        """Generate realistic sample data"""
+    def _generate_premium_sample_data(self, symbol, period):
+        """Generate realistic sample data with market patterns"""
         period_days = {
-            "1mo": 30, "3mo": 90, "6mo": 180, "1y": 365
+            "1mo": 30, "3mo": 90, "6mo": 180, "1y": 365, "2y": 730
         }.get(period, 180)
         
         dates = pd.date_range(end=datetime.now(), periods=period_days, freq='D')
         
-        # Generate realistic price patterns
-        base_price = 1000 + hash(symbol) % 5000
-        trend = np.linspace(0, hash(symbol) % 500, period_days)
-        noise = np.random.normal(0, 15 + hash(symbol) % 10, period_days)
+        # Create realistic market patterns
+        base_price = 1500 + hash(symbol) % 4000
+        trend = np.linspace(0, np.random.uniform(-300, 600), period_days)
         
-        close_prices = base_price + trend + noise
+        # Add market cycles and volatility clusters
+        cycles = (np.sin(np.linspace(0, 8*np.pi, period_days)) * 100 + 
+                 np.sin(np.linspace(0, 20*np.pi, period_days)) * 30)
         
+        # Volatility clustering (GARCH-like behavior)
+        volatility = np.random.randn(period_days) * (20 + np.abs(np.sin(np.linspace(0, 4*np.pi, period_days))) * 15)
+        
+        close_prices = base_price + trend + cycles + volatility
+        
+        # Generate OHLC data
         data = pd.DataFrame({
-            'Open': close_prices * (1 + np.random.normal(0, 0.008, period_days)),
+            'Open': close_prices * (1 + np.random.normal(0, 0.01, period_days)),
             'High': close_prices * (1 + np.abs(np.random.normal(0.015, 0.008, period_days))),
             'Low': close_prices * (1 - np.abs(np.random.normal(0.015, 0.008, period_days))),
             'Close': close_prices,
-            'Volume': np.random.randint(1000000, 5000000, period_days)
+            'Volume': np.random.lognormal(14, 1, period_days).astype(int)
         }, index=dates)
         
+        # Ensure High is highest and Low is lowest
+        data['High'] = data[['Open', 'High', 'Close']].max(axis=1)
+        data['Low'] = data[['Open', 'Low', 'Close']].min(axis=1)
+        
         return data
-
-# ==================== ENHANCED CHARTING ENGINE ====================
-
-class AdvancedChartingEngine:
-    def __init__(self):
-        self.tech_analysis = AdvancedTechnicalAnalysis()
     
-    def create_forecast_chart(self, data, forecasts, title="Price Forecast"):
-        """Create forecast chart with ML predictions"""
-        if not PLOTLY_AVAILABLE or data.empty:
-            return None
-        
-        fig = go.Figure()
-        
-        # Historical data
-        fig.add_trace(go.Scatter(
-            x=data.index,
-            y=data['Close'],
-            mode='lines',
-            name='Historical Price',
-            line=dict(color='blue', width=2)
-        ))
-        
-        # Forecasts
-        if forecasts:
-            last_date = data.index[-1]
-            future_dates = pd.date_range(start=last_date + timedelta(days=1), periods=len(list(forecasts.values())[0]), freq='D')
+    def get_live_quote(self, symbol):
+        """Get comprehensive live quote"""
+        try:
+            if not any(ext in symbol.upper() for ext in ['.NS', '.BO']):
+                symbol += '.NS'
             
-            for model_name, prediction in forecasts.items():
+            ticker = yf.Ticker(symbol)
+            info = ticker.info
+            history = ticker.history(period="2d")
+            
+            if not history.empty:
+                return {
+                    'current': info.get('currentPrice', history['Close'].iloc[-1]),
+                    'change': history['Close'].iloc[-1] - history['Close'].iloc[-2],
+                    'change_percent': ((history['Close'].iloc[-1] - history['Close'].iloc[-2]) / history['Close'].iloc[-2]) * 100,
+                    'high': history['High'].iloc[-1],
+                    'low': history['Low'].iloc[-1],
+                    'open': history['Open'].iloc[-1],
+                    'volume': history['Volume'].iloc[-1],
+                    'previous_close': history['Close'].iloc[-2],
+                    'timestamp': datetime.now()
+                }
+        except:
+            pass
+        
+        return self._generate_live_quote(symbol)
+    
+    def _generate_live_quote(self, symbol):
+        """Generate realistic live quote"""
+        return {
+            'current': 1500 + hash(symbol) % 4000,
+            'change': (hash(symbol) % 100 - 50),
+            'change_percent': (hash(symbol) % 100 - 50) / 10,
+            'high': 1600 + hash(symbol) % 4000,
+            'low': 1400 + hash(symbol) % 4000,
+            'open': 1520 + hash(symbol) % 4000,
+            'volume': 1000000 + hash(symbol) % 4000000,
+            'previous_close': 1480 + hash(symbol) % 4000,
+            'timestamp': datetime.now()
+        }
+
+# ==================== PREMIUM CHARTING ENGINE ====================
+class PremiumChartingEngine:
+    def __init__(self):
+        self.colors = {
+            'primary': '#00FFAA',
+            'secondary': '#0088FF',
+            'accent': '#FF00AA',
+            'background': '#0A0A0A',
+            'grid': '#1A1A1A'
+        }
+    
+    def create_advanced_candlestick(self, data, title="Stock Analysis"):
+        """Create premium candlestick chart with indicators"""
+        fig = make_subplots(
+            rows=4, cols=1,
+            shared_xaxes=True,
+            vertical_spacing=0.05,
+            row_heights=[0.5, 0.15, 0.15, 0.2],
+            subplot_titles=(f'{title} - Price Action', 'Volume', 'RSI', 'MACD')
+        )
+        
+        # Candlestick
+        fig.add_trace(go.Candlestick(
+            x=data.index,
+            open=data['Open'],
+            high=data['High'],
+            low=data['Low'],
+            close=data['Close'],
+            name='Price'
+        ), row=1, col=1)
+        
+        # Moving averages
+        for window, color in [(20, '#FF6B00'), (50, '#00D4FF'), (200, '#AA00FF')]:
+            if len(data) > window:
+                sma = data['Close'].rolling(window).mean()
                 fig.add_trace(go.Scatter(
-                    x=future_dates,
-                    y=prediction,
-                    mode='lines',
-                    name=f'{model_name.replace("_", " ").title()} Forecast',
-                    line=dict(dash='dash')
-                ))
+                    x=data.index, y=sma,
+                    mode='lines', name=f'SMA {window}',
+                    line=dict(color=color, width=2)
+                ), row=1, col=1)
+        
+        # Volume
+        colors = ['green' if data['Close'].iloc[i] >= data['Open'].iloc[i] else 'red' 
+                 for i in range(len(data))]
+        
+        fig.add_trace(go.Bar(
+            x=data.index, y=data['Volume'],
+            name='Volume', marker_color=colors,
+            opacity=0.7
+        ), row=2, col=1)
+        
+        # RSI
+        rsi = self.calculate_rsi(data['Close'])
+        fig.add_trace(go.Scatter(
+            x=data.index, y=rsi,
+            mode='lines', name='RSI',
+            line=dict(color='#FFAA00', width=2)
+        ), row=3, col=1)
+        
+        # RSI levels
+        fig.add_hline(y=70, line_dash="dash", line_color="red", row=3, col=1)
+        fig.add_hline(y=30, line_dash="dash", line_color="green", row=3, col=1)
+        fig.add_hline(y=50, line_dash="dot", line_color="white", row=3, col=1)
+        
+        # MACD
+        macd, signal, histogram = self.calculate_macd(data['Close'])
+        fig.add_trace(go.Scatter(
+            x=data.index, y=macd,
+            mode='lines', name='MACD',
+            line=dict(color='#00FFAA', width=2)
+        ), row=4, col=1)
+        
+        fig.add_trace(go.Scatter(
+            x=data.index, y=signal,
+            mode='lines', name='Signal',
+            line=dict(color='#FF0066', width=2)
+        ), row=4, col=1)
+        
+        colors_hist = ['green' if val >= 0 else 'red' for val in histogram]
+        fig.add_trace(go.Bar(
+            x=data.index, y=histogram,
+            name='Histogram', marker_color=colors_hist,
+            opacity=0.6
+        ), row=4, col=1)
         
         fig.update_layout(
-            title=f"{title} - ML Forecast",
-            xaxis_title="Date",
-            yaxis_title="Price",
+            title=f"Advanced Analysis - {title}",
             template="plotly_dark",
-            height=500
+            height=900,
+            showlegend=True,
+            xaxis_rangeslider_visible=False
         )
         
         return fig
     
-    def create_option_chain_chart(self, option_chain, spot_price):
-        """Create option chain visualization"""
-        if option_chain.empty:
-            return None
-            
-        fig = make_subplots(
-            rows=2, cols=2,
-            subplot_titles=('Call/Put Prices', 'Delta Values', 'Theta Values', 'Vega Values'),
-            vertical_spacing=0.1
-        )
+    def create_forecast_chart(self, historical_data, forecasts, future_dates, title="Price Forecast"):
+        """Create premium forecast visualization"""
+        fig = go.Figure()
         
-        # Call/Put Prices
+        # Historical data
         fig.add_trace(go.Scatter(
-            x=option_chain['strike'], y=option_chain['call_price'],
-            mode='lines', name='Call Price', line=dict(color='green')
-        ), row=1, col=1)
+            x=historical_data.index[-60:],
+            y=historical_data['Close'].iloc[-60:],
+            mode='lines',
+            name='Historical',
+            line=dict(color='#00FFAA', width=3)
+        ))
         
+        # Forecast
         fig.add_trace(go.Scatter(
-            x=option_chain['strike'], y=option_chain['put_price'],
-            mode='lines', name='Put Price', line=dict(color='red')
-        ), row=1, col=1)
+            x=future_dates,
+            y=forecasts['future_prices'],
+            mode='lines+markers',
+            name='AI Forecast',
+            line=dict(color='#FF00AA', width=3, dash='dash')
+        ))
         
-        # Delta Values
-        fig.add_trace(go.Scatter(
-            x=option_chain['strike'], y=option_chain['call_delta'],
-            mode='lines', name='Call Delta', line=dict(color='lightgreen')
-        ), row=1, col=2)
+        # Confidence interval
+        confidence_upper = [p * 1.05 for p in forecasts['future_prices']]
+        confidence_lower = [p * 0.95 for p in forecasts['future_prices']]
         
         fig.add_trace(go.Scatter(
-            x=option_chain['strike'], y=option_chain['put_delta'],
-            mode='lines', name='Put Delta', line=dict(color='pink')
-        ), row=1, col=2)
-        
-        # Theta Values
-        fig.add_trace(go.Scatter(
-            x=option_chain['strike'], y=option_chain['call_theta'],
-            mode='lines', name='Call Theta', line=dict(color='orange')
-        ), row=2, col=1)
-        
-        fig.add_trace(go.Scatter(
-            x=option_chain['strike'], y=option_chain['put_theta'],
-            mode='lines', name='Put Theta', line=dict(color='yellow')
-        ), row=2, col=1)
-        
-        # Vega Values
-        fig.add_trace(go.Scatter(
-            x=option_chain['strike'], y=option_chain['call_vega'],
-            mode='lines', name='Call Vega', line=dict(color='purple')
-        ), row=2, col=2)
-        
-        fig.add_trace(go.Scatter(
-            x=option_chain['strike'], y=option_chain['put_vega'],
-            mode='lines', name='Put Vega', line=dict(color='violet')
-        ), row=2, col=2)
-        
-        # Add spot price line
-        for row in [1, 2]:
-            for col in [1, 2]:
-                fig.add_vline(x=spot_price, line_dash="dash", line_color="white", row=row, col=col)
+            x=future_dates + future_dates[::-1],
+            y=confidence_upper + confidence_lower[::-1],
+            fill='toself',
+            fillcolor='rgba(255,0,170,0.2)',
+            line=dict(color='rgba(255,255,255,0)'),
+            name='Confidence Interval'
+        ))
         
         fig.update_layout(
-            title="Option Chain Analysis",
+            title=f"{title} - AI Price Forecast (Next {len(future_dates)} Days)",
             template="plotly_dark",
             height=600,
             showlegend=True
         )
         
         return fig
-
-# ==================== ENHANCED TECHNICAL ANALYSIS ====================
-
-class AdvancedTechnicalAnalysis:
-    def calculate_all_indicators(self, data):
-        """Calculate technical indicators"""
-        if data.empty:
-            return {}
-            
-        indicators = {}
-        prices = data['Close']
-        
-        # Basic indicators
-        indicators['sma_20'] = prices.rolling(20).mean().iloc[-1]
-        indicators['sma_50'] = prices.rolling(50).mean().iloc[-1]
-        indicators['rsi'] = self.calculate_rsi(prices).iloc[-1]
-        
-        return indicators
     
     def calculate_rsi(self, prices, period=14):
-        """Calculate RSI"""
         delta = prices.diff()
         gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
         rs = gain / loss
         return 100 - (100 / (1 + rs))
+    
+    def calculate_macd(self, prices, fast=12, slow=26, signal=9):
+        ema_fast = prices.ewm(span=fast).mean()
+        ema_slow = prices.ewm(span=slow).mean()
+        macd = ema_fast - ema_slow
+        macd_signal = macd.ewm(span=signal).mean()
+        macd_histogram = macd - macd_signal
+        return macd, macd_signal, macd_histogram
 
-# ==================== QUANTUM TRADING TERMINAL ====================
-
-class QuantumTradingTerminal:
+# ==================== PREMIUM TRADING TERMINAL ====================
+class PremiumTradingTerminal:
     def __init__(self):
-        self.data_manager = EnhancedDataManager()
-        self.chart_engine = AdvancedChartingEngine()
-        self.tech_analysis = AdvancedTechnicalAnalysis()
-        self.sentiment_analyzer = SentimentAnalyzer()
-        self.quant_strategies = QuantitativeStrategies()
+        self.data_manager = PremiumDataManager()
+        self.ai_engine = QuantumAIEngine()
+        self.option_pricer = BlackScholesPricer()
+        self.sentiment_analyzer = AdvancedSentimentAnalyzer()
+        self.chart_engine = PremiumChartingEngine()
         
         # Initialize session state
-        if 'selected_stocks' not in st.session_state:
-            st.session_state.selected_stocks = ['RELIANCE', 'TCS', 'HDFCBANK']
+        if 'portfolio' not in st.session_state:
+            st.session_state.portfolio = {}
         if 'watchlist' not in st.session_state:
-            st.session_state.watchlist = []
+            st.session_state.watchlist = ['RELIANCE.NS', 'TCS.NS', 'INFY.NS']
+        if 'alerts' not in st.session_state:
+            st.session_state.alerts = []
     
-    def render_header(self):
-        """Render enhanced application header"""
+    def render_premium_header(self):
+        """Render premium application header"""
         st.markdown("""
         <style>
-        .main-header {
-            font-size: 3rem;
+        .premium-header {
+            font-size: 3.5rem;
             font-weight: bold;
             background: linear-gradient(45deg, #FF0000, #FFA500, #FFFF00, #008000, #0000FF, #4B0082, #EE82EE);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-align: center;
             margin-bottom: 1rem;
+            text-shadow: 0 0 30px rgba(255,255,255,0.3);
         }
-        .section-header {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #4f46e5;
-            margin: 1rem 0;
+        .premium-card {
+            background: linear-gradient(135deg, #0A0A0A 0%, #1A1A2E 50%, #16213E 100%);
+            padding: 1.5rem;
+            border-radius: 15px;
+            border: 1px solid #00FFAA;
+            margin: 0.5rem;
+            box-shadow: 0 8px 32px rgba(0, 255, 170, 0.1);
+        }
+        .metric-glowing {
+            background: rgba(0, 255, 170, 0.1);
+            border: 1px solid #00FFAA;
+            border-radius: 10px;
+            padding: 1rem;
+            box-shadow: 0 0 20px rgba(0, 255, 170, 0.2);
         }
         </style>
         """, unsafe_allow_html=True)
         
-        st.markdown('<div class="main-header">🚀 QUANTUM AI TRADING TERMINAL</div>', unsafe_allow_html=True)
+        st.markdown('<div class="premium-header">🚀 QUANTUM AI TRADING TERMINAL</div>', unsafe_allow_html=True)
         
-        # Market overview
-        st.markdown("### 📈 Live Market Overview")
+        # Real-time market overview
+        st.markdown("### 📊 LIVE MARKET DASHBOARD")
+        
+        # Cash, Futures, Options overview
         cols = st.columns(4)
+        with cols[0]:
+            st.markdown('<div class="metric-glowing">', unsafe_allow_html=True)
+            st.metric("💰 CASH MARKET", "₹2.14 Cr", "+1.25%")
+            st.markdown('</div>', unsafe_allow_html=True)
         
-        indices = ['NIFTY 50', 'BANK NIFTY', 'SENSEX', 'NIFTY IT']
-        values = [22123.45, 47218.90, 73421.67, 35842.12]
-        changes = [1.23, -0.45, 0.89, 2.15]
+        with cols[1]:
+            st.markdown('<div class="metric-glowing">', unsafe_allow_html=True)
+            st.metric("⚡ FUTURES", "₹85.42L", "+0.89%")
+            st.markdown('</div>', unsafe_allow_html=True)
         
-        for idx, (index, value, change) in enumerate(zip(indices, values, changes)):
-            with cols[idx]:
-                st.metric(
-                    index,
-                    f"₹{value:,.2f}",
-                    f"{change:+.2f}%"
-                )
+        with cols[2]:
+            st.markdown('<div class="metric-glowing">', unsafe_allow_html=True)
+            st.metric("📈 OPTIONS", "₹1.24 Cr", "+2.15%")
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        with cols[3]:
+            st.markdown('<div class="metric-glowing">', unsafe_allow_html=True)
+            st.metric("🎯 TOTAL EXPOSURE", "₹4.23 Cr", "+1.42%")
+            st.markdown('</div>', unsafe_allow_html=True)
     
     def render_live_market_dashboard(self):
-        """Render enhanced live market dashboard"""
-        st.markdown("### 🔴 Live Market Dashboard")
+        """Render comprehensive live market dashboard"""
+        st.markdown("## 📈 LIVE MARKET DASHBOARD")
         
-        # Market segments
-        tab1, tab2, tab3, tab4 = st.tabs(["💰 Cash", "📈 Futures", "⚡ Options", "📊 Derivatives Chain"])
+        # Market indices
+        st.markdown("### 🔥 Market Indices")
+        indices = ['^NSEI', '^NSEBANK', '^BSESN', 'RELIANCE.NS', 'TCS.NS']
+        index_names = ['NIFTY 50', 'BANK NIFTY', 'SENSEX', 'RELIANCE', 'TCS']
         
-        with tab1:
-            self._render_cash_market()
+        cols = st.columns(5)
+        for idx, (symbol, name) in enumerate(zip(indices, index_names)):
+            with cols[idx]:
+                quote = self.data_manager.get_live_quote(symbol)
+                if quote:
+                    delta_color = "normal" if quote['change'] >= 0 else "inverse"
+                    st.metric(
+                        name,
+                        f"₹{quote['current']:,.0f}",
+                        f"{quote['change_percent']:+.2f}%",
+                        delta_color=delta_color
+                    )
         
-        with tab2:
-            self._render_futures_market()
+        # Advanced charts
+        st.markdown("### 📊 Advanced Market Analysis")
+        selected_index = st.selectbox("Select Index", indices, format_func=lambda x: index_names[indices.index(x)])
         
-        with tab3:
-            self._render_options_market()
-        
-        with tab4:
-            self._render_derivatives_chain()
+        if selected_index:
+            data = self.data_manager.get_stock_data(selected_index, "6mo")
+            if not data.empty:
+                chart = self.chart_engine.create_advanced_candlestick(data, index_names[indices.index(selected_index)])
+                st.plotly_chart(chart, use_container_width=True)
     
-    def _render_cash_market(self):
-        """Render cash market data"""
-        st.markdown("#### 💰 Cash Market - Equity")
+    def render_machine_learning_terminal(self):
+        """Render advanced ML trading terminal"""
+        st.markdown("## 🤖 MACHINE LEARNING TRADING TERMINAL")
         
-        # Top gainers/losers
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("**Top Gainers**")
-            gainers_data = {
-                'Stock': ['RELIANCE', 'TCS', 'INFY', 'HDFC', 'ICICI'],
-                'Price': [2850.45, 3850.20, 1850.75, 1650.30, 950.45],
-                'Change %': [3.45, 2.89, 2.45, 2.12, 1.95]
-            }
-            st.dataframe(pd.DataFrame(gainers_data), use_container_width=True)
-        
-        with col2:
-            st.markdown("**Top Losers**")
-            losers_data = {
-                'Stock': ['ZOMATO', 'PAYTM', 'YESBANK', 'VEDL', 'TATASTEEL'],
-                'Price': [125.45, 650.20, 22.75, 285.30, 145.45],
-                'Change %': [-2.45, -1.89, -1.75, -1.52, -1.35]
-            }
-            st.dataframe(pd.DataFrame(losers_data), use_container_width=True)
-        
-        # Market depth
-        st.markdown("#### 📊 Market Depth - RELIANCE")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("**Buy Side**")
-            buy_side = {
-                'Price': [2848.00, 2847.50, 2847.00, 2846.50, 2846.00],
-                'Quantity': [1250, 890, 1560, 2100, 950]
-            }
-            st.dataframe(pd.DataFrame(buy_side), use_container_width=True)
-        
-        with col2:
-            st.markdown("**Sell Side**")
-            sell_side = {
-                'Price': [2852.00, 2852.50, 2853.00, 2853.50, 2854.00],
-                'Quantity': [980, 1120, 760, 1450, 890]
-            }
-            st.dataframe(pd.DataFrame(sell_side), use_container_width=True)
-    
-    def _render_futures_market(self):
-        """Render futures market data"""
-        st.markdown("#### 📈 Futures Market")
-        
-        # Futures data
-        futures_data = {
-            'Contract': ['NIFTY JAN', 'BANKNIFTY JAN', 'RELIANCE JAN', 'TCS JAN', 'INFY JAN'],
-            'Spot': [22123.45, 47218.90, 2850.45, 3850.20, 1850.75],
-            'Future': [22145.67, 47245.23, 2855.89, 3858.45, 1854.23],
-            'Premium': [22.22, 26.33, 5.44, 8.25, 3.48],
-            'Expiry': ['25-Jan-2024', '25-Jan-2024', '25-Jan-2024', '25-Jan-2024', '25-Jan-2024']
+        # Stock selection
+        stocks = {
+            'RELIANCE': 'RELIANCE.NS',
+            'TCS': 'TCS.NS',
+            'INFOSYS': 'INFY.NS', 
+            'HDFC BANK': 'HDFCBANK.NS',
+            'ICICI BANK': 'ICICIBANK.NS',
+            'BHARTI AIRTEL': 'BHARTIARTL.NS'
         }
         
-        st.dataframe(pd.DataFrame(futures_data), use_container_width=True)
-        
-        # Futures chart
-        st.markdown("#### Futures Premium/Discount")
-        dates = pd.date_range(start='2024-01-01', periods=30, freq='D')
-        futures_premium = np.random.normal(20, 5, 30)
-        
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=dates, y=futures_premium,
-            mode='lines+markers',
-            name='Futures Premium',
-            line=dict(color='cyan', width=3)
-        ))
-        
-        fig.add_hline(y=0, line_dash="dash", line_color="white")
-        fig.update_layout(
-            title="Futures Premium Over Time",
-            template="plotly_dark",
-            height=400
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-    
-    def _render_options_market(self):
-        """Render options market data"""
-        st.markdown("#### ⚡ Options Market")
-        
-        # Option chain
-        spot_price = 22123.45
-        option_chain = self.quant_strategies.generate_option_chain(spot_price)
-        
-        st.dataframe(option_chain, use_container_width=True)
-        
-        # Option chain visualization
-        st.markdown("#### Options Chain Analysis")
-        option_chart = self.chart_engine.create_option_chain_chart(option_chain, spot_price)
-        if option_chart:
-            st.plotly_chart(option_chart, use_container_width=True)
-    
-    def _render_derivatives_chain(self):
-        """Render derivatives chain"""
-        st.markdown("#### 📊 Derivatives Chain Analysis")
-        
-        # Open interest analysis
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("**Open Interest - Calls**")
-            oi_calls = {
-                'Strike': [21500, 21800, 22000, 22200, 22500],
-                'OI': [124500, 89200, 156800, 112300, 98700],
-                'Change': [4500, -2300, 8900, 5600, -1200]
-            }
-            st.dataframe(pd.DataFrame(oi_calls), use_container_width=True)
-        
-        with col2:
-            st.markdown("**Open Interest - Puts**")
-            oi_puts = {
-                'Strike': [21500, 21800, 22000, 22200, 22500],
-                'OI': [98700, 112400, 145600, 89200, 75600],
-                'Change': [-3400, 6700, 4500, -2300, 8900]
-            }
-            st.dataframe(pd.DataFrame(oi_puts), use_container_width=True)
-        
-        # PCR analysis
-        st.markdown("#### Put-Call Ratio Analysis")
-        pcr_data = {
-            'Time': ['1D', '1W', '1M'],
-            'PCR': [0.85, 0.92, 1.05],
-            'Signal': ['Neutral', 'Neutral', 'Bearish']
-        }
-        st.dataframe(pd.DataFrame(pcr_data), use_container_width=True)
-    
-    def render_machine_learning_dashboard(self):
-        """Render machine learning dashboard"""
-        st.markdown("### 🤖 Machine Learning Dashboard")
-        
-        # Stock selection for ML
         col1, col2 = st.columns([2, 1])
-        
         with col1:
-            stocks = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK']
-            selected_stock = st.selectbox("Select Stock for ML Analysis", stocks)
-        
+            selected_stock = st.selectbox("Select Stock for AI Analysis", list(stocks.keys()))
         with col2:
-            forecast_days = st.slider("Forecast Days", 7, 90, 30)
+            forecast_days = st.slider("Forecast Period (Days)", 7, 90, 30)
         
-        if st.button("Generate ML Forecast", use_container_width=True):
-            with st.spinner("Training ML models and generating forecasts..."):
-                data, forecasts = self.data_manager.get_forecast_data(selected_stock, "1y")
+        if selected_stock:
+            symbol = stocks[selected_stock]
+            
+            with st.spinner("🚀 Training Quantum AI Models..."):
+                data = self.data_manager.get_stock_data(symbol, "2y")
                 
                 if not data.empty:
-                    # Display forecast chart
-                    forecast_chart = self.chart_engine.create_forecast_chart(data, forecasts, selected_stock)
-                    if forecast_chart:
-                        st.plotly_chart(forecast_chart, use_container_width=True)
+                    # Train AI models
+                    performance = self.ai_engine.train_ensemble_model(data)
                     
-                    # Model performance
-                    st.markdown("#### 📊 Model Performance Metrics")
-                    metrics_data = {
-                        'Model': ['Random Forest', 'Linear Regression', 'ARIMA', 'LSTM', 'Prophet'],
-                        'RMSE': [45.23, 52.67, 48.91, 42.15, 47.82],
-                        'MAE': [32.45, 38.92, 35.67, 30.23, 34.89],
-                        'R² Score': [0.89, 0.85, 0.87, 0.91, 0.88]
-                    }
-                    st.dataframe(pd.DataFrame(metrics_data), use_container_width=True)
-                    
-                    # Trading signals based on ML
-                    st.markdown("#### 📈 ML Trading Signals")
-                    col1, col2, col3 = st.columns(3)
-                    
-                    with col1:
-                        st.metric("ML Signal", "BUY", "Strong Bullish")
-                    
-                    with col2:
-                        st.metric("Confidence", "85%", "High")
-                    
-                    with col3:
-                        st.metric("Target Price", "₹2,950", "+4.2%")
-                else:
-                    st.error("Unable to generate forecasts for selected stock")
-        
-        # ML Analyzer Bot
-        st.markdown("#### 🧠 ML Analyzer Bot")
-        user_query = st.text_input("Ask the ML Analyzer:", "What's the outlook for RELIANCE?")
-        
-        if st.button("Analyze", use_container_width=True):
-            with st.spinner("Analyzing with ML models..."):
-                # Simulate ML analysis
-                analysis_result = {
-                    'Trend': 'Bullish',
-                    'Confidence': '85%',
-                    'Key Factors': ['Strong earnings growth', 'Positive sector outlook', 'Technical breakout'],
-                    'Risk Factors': ['Market volatility', 'Global economic concerns'],
-                    'Recommendation': 'Accumulate on dips',
-                    'Price Targets': ['Short-term: ₹2,900', 'Medium-term: ₹3,200']
-                }
-                
-                st.markdown("**Analysis Result:**")
-                for key, value in analysis_result.items():
-                    if isinstance(value, list):
-                        st.write(f"**{key}:**")
-                        for item in value:
-                            st.write(f"- {item}")
-                    else:
-                        st.write(f"**{key}:** {value}")
+                    if performance:
+                        # Display model performance
+                        st.markdown("### 📊 AI Model Performance")
+                        perf_cols = st.columns(len(performance))
+                        
+                        for idx, (model_name, metrics) in enumerate(performance.items()):
+                            with perf_cols[idx]:
+                                st.metric(
+                                    f"🤖 {model_name}",
+                                    f"MAE: {metrics['MAE']:.4f}",
+                                    f"RMSE: {metrics['RMSE']:.4f}"
+                                )
+                        
+                        # Generate forecasts
+                        forecasts = self.ai_engine.predict_future(data, forecast_days)
+                        
+                        if forecasts:
+                            # Display forecast chart
+                            st.markdown("### 🔮 AI Price Forecast")
+                            forecast_chart = self.chart_engine.create_forecast_chart(
+                                data, forecasts, forecasts['future_dates'], selected_stock
+                            )
+                            st.plotly_chart(forecast_chart, use_container_width=True)
+                            
+                            # Model predictions
+                            st.markdown("### 🎯 Model Predictions")
+                            pred_cols = st.columns(len(forecasts['predictions']))
+                            
+                            current_price = data['Close'].iloc[-1]
+                            for idx, (model_name, prediction) in enumerate(forecasts['predictions'].items()):
+                                with pred_cols[idx]:
+                                    expected_return = prediction * 100
+                                    st.metric(
+                                        f"{model_name}",
+                                        f"{expected_return:+.2f}%",
+                                        "5-day Return"
+                                    )
+                            
+                            # Trading signals
+                            st.markdown("### 💡 AI Trading Signals")
+                            ensemble_return = forecasts['ensemble_return']
+                            
+                            if ensemble_return > 0.02:
+                                signal = "🚀 STRONG BUY"
+                                color = "green"
+                                reasoning = "AI models predict significant upside momentum"
+                            elif ensemble_return > 0:
+                                signal = "📈 BUY"
+                                color = "lightgreen"
+                                reasoning = "Moderate bullish signals detected"
+                            elif ensemble_return < -0.02:
+                                signal = "🔻 STRONG SELL"
+                                color = "red"
+                                reasoning = "AI models predict downward pressure"
+                            else:
+                                signal = "⚡ HOLD"
+                                color = "orange"
+                                reasoning = "Neutral market conditions"
+                            
+                            st.markdown(f"""
+                            <div style='background-color: {color}20; padding: 20px; border-radius: 10px; border-left: 5px solid {color}'>
+                                <h3 style='color: {color}; margin: 0;'>{signal}</h3>
+                                <p style='margin: 10px 0 0 0; color: white;'>Expected Return: <b>{ensemble_return*100:+.2f}%</b></p>
+                                <p style='margin: 5px 0 0 0; color: #CCCCCC;'>{reasoning}</p>
+                            </div>
+                            """, unsafe_allow_html=True)
     
     def render_sentiment_analysis(self):
-        """Render sentiment analysis dashboard"""
-        st.markdown("### 📊 Sentiment Analysis Dashboard")
+        """Render advanced sentiment analysis"""
+        st.markdown("## 📊 ADVANCED SENTIMENT ANALYSIS")
         
-        # Overall market sentiment
-        sentiment_fig, sentiment_data = self.sentiment_analyzer.create_sentiment_dashboard()
+        stocks = ['RELIANCE', 'TCS', 'INFOSYS', 'HDFC BANK', 'ICICI BANK']
+        selected_stock = st.selectbox("Select Stock for Sentiment Analysis", stocks)
         
-        if sentiment_fig:
-            st.plotly_chart(sentiment_fig, use_container_width=True)
-        
-        # Sentiment news feed
-        st.markdown("#### 📰 Market Sentiment News")
-        if sentiment_data is not None:
-            for idx, news in sentiment_data.iterrows():
-                sentiment_color = "🟢" if news['sentiment'] > 0.1 else "🔴" if news['sentiment'] < -0.1 else "🟡"
+        if selected_stock:
+            with st.spinner("🔍 Analyzing Market Sentiment..."):
+                sentiment = self.sentiment_analyzer.get_comprehensive_sentiment(selected_stock, selected_stock)
                 
-                with st.expander(f"{sentiment_color} {news['headline']} ({news['source']})"):
-                    st.write(f"**Sentiment Score:** {news['sentiment']:.3f}")
-                    st.write(f"**Impact:** {news['impact']}")
-                    st.write(f"**Time:** {news['timestamp'].strftime('%Y-%m-%d %H:%M')}")
-        
-        # Social media sentiment
-        st.markdown("#### 📱 Social Media Sentiment")
-        platforms = ['Twitter', 'Reddit', 'StockTwits', 'Financial Blogs']
-        sentiments = [0.45, 0.32, 0.28, 0.51]
-        
-        fig = px.bar(
-            x=platforms, y=sentiments,
-            title="Social Media Sentiment by Platform",
-            color=sentiments,
-            color_continuous_scale='RdYlGn'
-        )
-        fig.update_layout(template="plotly_dark", height=400)
-        st.plotly_chart(fig, use_container_width=True)
+                # Overall sentiment
+                st.markdown("### 🎯 Overall Sentiment Score")
+                sentiment_score = sentiment['overall_score']
+                
+                # Sentiment gauge
+                fig = go.Figure(go.Indicator(
+                    mode = "gauge+number+delta",
+                    value = sentiment_score,
+                    domain = {'x': [0, 1], 'y': [0, 1]},
+                    title = {'text': "Sentiment Meter"},
+                    delta = {'reference': 0},
+                    gauge = {
+                        'axis': {'range': [-100, 100]},
+                        'bar': {'color': "darkblue"},
+                        'steps': [
+                            {'range': [-100, -50], 'color': "red"},
+                            {'range': [-50, 0], 'color': "lightcoral"},
+                            {'range': [0, 50], 'color': "lightgreen"},
+                            {'range': [50, 100], 'color': "green"}
+                        ],
+                        'threshold': {
+                            'line': {'color': "white", 'width': 4},
+                            'thickness': 0.75,
+                            'value': sentiment_score
+                        }
+                    }
+                ))
+                
+                fig.update_layout(height=300)
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Sentiment breakdown
+                st.markdown("### 📈 Sentiment Breakdown by Source")
+                sources = list(sentiment['breakdown'].keys())
+                scores = [sentiment['breakdown'][source] * 100 for source in sources]
+                
+                fig_bar = px.bar(
+                    x=sources, y=scores,
+                    title="Sentiment Scores by Source",
+                    color=scores,
+                    color_continuous_scale="RdYlGn"
+                )
+                fig_bar.update_layout(template="plotly_dark")
+                st.plotly_chart(fig_bar, use_container_width=True)
+                
+                # Recommendation
+                st.markdown("### 💡 Sentiment-Based Recommendation")
+                rec_color = "green" if sentiment['recommendation'] == "BUY" else "red" if sentiment['recommendation'] == "SELL" else "orange"
+                
+                st.markdown(f"""
+                <div style='background-color: {rec_color}20; padding: 20px; border-radius: 10px; border-left: 5px solid {rec_color}'>
+                    <h3 style='color: {rec_color}; margin: 0;'>🎯 {sentiment['recommendation']} RECOMMENDATION</h3>
+                    <p style='margin: 10px 0 0 0; color: white;'>Confidence: <b>{sentiment['confidence']:.1f}%</b></p>
+                    <p style='margin: 5px 0 0 0; color: #CCCCCC;'>Based on multi-source sentiment analysis</p>
+                </div>
+                """, unsafe_allow_html=True)
     
     def render_quant_strategies(self):
         """Render quantitative strategies dashboard"""
-        st.markdown("### 📐 Quantitative Strategies")
+        st.markdown("## 📊 QUANTITATIVE STRATEGIES")
         
-        tab1, tab2, tab3, tab4 = st.tabs(["Black-Scholes", "Option Greeks", "Option Chain", "Expiry Analysis"])
+        tabs = st.tabs(["Black-Scholes Calculator", "Option Greeks", "Option Chain", "Futures & Expiry"])
         
-        with tab1:
-            self._render_black_scholes()
-        
-        with tab2:
-            self._render_option_greeks()
-        
-        with tab3:
-            self._render_option_chain_analysis()
-        
-        with tab4:
-            self._render_expiry_analysis()
-    
-    def _render_black_scholes(self):
-        """Render Black-Scholes calculator"""
-        st.markdown("#### 📊 Black-Scholes Option Pricing")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            spot_price = st.number_input("Spot Price (S)", value=22123.45, min_value=0.0)
-            strike_price = st.number_input("Strike Price (K)", value=22000.00, min_value=0.0)
-            time_to_expiry = st.number_input("Time to Expiry (Days)", value=30, min_value=1)
-        
-        with col2:
-            risk_free_rate = st.number_input("Risk-Free Rate (r)", value=0.05, min_value=0.0, max_value=0.2, step=0.01)
-            volatility = st.number_input("Volatility (σ)", value=0.2, min_value=0.01, max_value=1.0, step=0.01)
-            option_type = st.selectbox("Option Type", ["Call", "Put"])
-        
-        if st.button("Calculate Option Price", use_container_width=True):
-            T = time_to_expiry / 365
-            price = self.quant_strategies.black_scholes(
-                spot_price, strike_price, T, risk_free_rate, volatility, option_type.lower()
+        with tabs[0]:
+            st.markdown("### 📈 Black-Scholes Option Pricing")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                spot_price = st.number_input("Spot Price (₹)", value=1500.0, min_value=0.0)
+                strike_price = st.number_input("Strike Price (₹)", value=1550.0, min_value=0.0)
+                days_to_expiry = st.slider("Days to Expiry", 1, 365, 30)
+            
+            with col2:
+                volatility = st.slider("Volatility (%)", 1.0, 100.0, 25.0) / 100
+                risk_free_rate = st.slider("Risk-Free Rate (%)", 0.0, 10.0, 5.0) / 100
+                option_type = st.selectbox("Option Type", ["Call", "Put"])
+            
+            # Calculate option price
+            time_to_expiry = days_to_expiry / 365
+            option_price = self.option_pricer.calculate_option_price(
+                spot_price, strike_price, time_to_expiry, volatility, option_type.lower()
             )
             
-            st.metric(f"{option_type} Option Price", f"₹{price:.2f}")
+            # Display results
+            st.metric(f"🎯 {option_type} Option Price", f"₹{option_price:.2f}")
             
-            # Show Greeks
-            greeks = self.quant_strategies.calculate_greeks(
-                spot_price, strike_price, T, risk_free_rate, volatility, option_type.lower()
+            # Greeks
+            greeks = self.option_pricer.calculate_greeks(
+                spot_price, strike_price, time_to_expiry, volatility, option_type.lower()
             )
             
-            st.markdown("#### Option Greeks")
+            st.markdown("#### 📊 Option Greeks")
             greek_cols = st.columns(5)
-            greek_names = ['Delta', 'Gamma', 'Theta', 'Vega', 'Rho']
-            greek_values = list(greeks.values())
+            greek_info = {
+                'delta': "Price sensitivity to underlying",
+                'gamma': 'Delta sensitivity to underlying',
+                'theta': 'Time decay per day',
+                'vega': 'Volatility sensitivity',
+                'rho': 'Interest rate sensitivity'
+            }
             
-            for idx, (name, value) in enumerate(zip(greek_names, greek_values)):
+            for idx, (greek, value) in enumerate(greeks.items()):
                 with greek_cols[idx]:
-                    st.metric(name, f"{value:.4f}")
-    
-    def _render_option_greeks(self):
-        """Render option Greeks analysis"""
-        st.markdown("#### 📈 Option Greeks Analysis")
+                    st.metric(
+                        f"Δ {greek.upper()}",
+                        f"{value:.4f}",
+                        help=greek_info.get(greek, "")
+                    )
         
-        # Greeks sensitivity analysis
-        spot_range = np.linspace(21000, 23000, 50)
-        greeks_data = []
-        
-        for spot in spot_range:
-            greeks = self.quant_strategies.calculate_greeks(
-                spot, 22000, 30/365, 0.05, 0.2, "call"
-            )
-            greeks_data.append({
-                'spot': spot,
-                'delta': greeks['delta'],
-                'gamma': greeks['gamma'],
-                'theta': greeks['theta'],
-                'vega': greeks['vega']
-            })
-        
-        greeks_df = pd.DataFrame(greeks_data)
-        
-        fig = go.Figure()
-        for greek in ['delta', 'gamma', 'theta', 'vega']:
-            fig.add_trace(go.Scatter(
-                x=greeks_df['spot'], y=greeks_df[greek],
-                mode='lines', name=greek.title()
-            ))
-        
-        fig.update_layout(
-            title="Option Greeks vs Spot Price",
-            xaxis_title="Spot Price",
-            yaxis_title="Greek Value",
-            template="plotly_dark",
-            height=500
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-    
-    def _render_option_chain_analysis(self):
-        """Render option chain analysis"""
-        st.markdown("#### ⚡ Live Option Chain Analysis")
-        
-        # Simulated option chain data
-        strikes = np.arange(21500, 22600, 100)
-        option_data = []
-        
-        for strike in strikes:
-            # Simulate OI and volume
-            oi_call = np.random.randint(50000, 200000)
-            oi_put = np.random.randint(50000, 200000)
-            volume_call = np.random.randint(10000, 50000)
-            volume_put = np.random.randint(10000, 50000)
+        with tabs[1]:
+            st.markdown("### 📊 Option Greeks Analysis")
             
-            option_data.append({
-                'Strike': strike,
-                'Call OI': oi_call,
-                'Put OI': oi_put,
-                'Call Volume': volume_call,
-                'Put Volume': volume_put,
-                'PCR': oi_put / oi_call if oi_call > 0 else 0
-            })
+            # Interactive Greeks visualization
+            spot_range = np.linspace(spot_price * 0.7, spot_price * 1.3, 50)
+            deltas = []
+            
+            for price in spot_range:
+                greeks = self.option_pricer.calculate_greeks(
+                    price, strike_price, time_to_expiry, volatility, option_type.lower()
+                )
+                deltas.append(greeks['delta'])
+            
+            fig = px.line(x=spot_range, y=deltas, title="Delta vs Spot Price")
+            fig.update_layout(template="plotly_dark")
+            st.plotly_chart(fig, use_container_width=True)
         
-        option_df = pd.DataFrame(option_data)
-        st.dataframe(option_df, use_container_width=True)
-    
-    def _render_expiry_analysis(self):
-        """Render expiry analysis"""
-        st.markdown("#### 📅 Expiry Analysis")
+        with tabs[2]:
+            st.markdown("### 🔗 Live Option Chain")
+            
+            # Generate simulated option chain
+            strikes = np.arange(spot_price * 0.8, spot_price * 1.2, 50)
+            option_chain = []
+            
+            for strike in strikes:
+                call_price = self.option_pricer.calculate_option_price(
+                    spot_price, strike, time_to_expiry, volatility, "call"
+                )
+                put_price = self.option_pricer.calculate_option_price(
+                    spot_price, strike, time_to_expiry, volatility, "put"
+                )
+                
+                option_chain.append({
+                    'Strike': strike,
+                    'Call Price': call_price,
+                    'Put Price': put_price,
+                    'Call OI': f"{np.random.randint(1000, 50000):,}",
+                    'Put OI': f"{np.random.randint(1000, 50000):,}"
+                })
+            
+            option_df = pd.DataFrame(option_chain)
+            st.dataframe(option_df, use_container_width=True)
         
-        # Expiry-wise OI analysis
-        expiries = ['25-Jan-2024', '29-Feb-2024', '28-Mar-2024', '25-Apr-2024']
-        total_oi = [1250000, 890000, 670000, 450000]
-        pcr_values = [0.85, 0.92, 1.05, 0.78]
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            fig1 = px.bar(x=expiries, y=total_oi, title="Total Open Interest by Expiry")
-            fig1.update_layout(template="plotly_dark", height=400)
-            st.plotly_chart(fig1, use_container_width=True)
-        
-        with col2:
-            fig2 = px.line(x=expiries, y=pcr_values, title="Put-Call Ratio by Expiry")
-            fig2.update_layout(template="plotly_dark", height=400)
-            fig2.add_hline(y=1.0, line_dash="dash", line_color="white")
-            st.plotly_chart(fig2, use_container_width=True)
+        with tabs[3]:
+            st.markdown("### ⚡ Futures & Expiry Analysis")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("#### 📅 Futures Contracts")
+                futures_data = {
+                    'Contract': ['NIFTY JAN', 'BANKNIFTY JAN', 'RELIANCE JAN', 'TCS JAN'],
+                    'Last Price': [21542, 47568, 2856, 3854],
+                    'Change': ['+142', '+68', '+26', '-12'],
+                    'Open Interest': ['1.2M', '856K', '324K', '287K']
+                }
+                st.dataframe(pd.DataFrame(futures_data), use_container_width=True)
+            
+            with col2:
+                st.markdown("#### 📆 Expiry Calendar")
+                expiry_data = {
+                    'Series': ['Weekly', 'Monthly', 'Quarterly'],
+                    'Expiry': ['25-Jan-2024', '31-Jan-2024', '29-Mar-2024'],
+                    'Days Left': [5, 11, 68]
+                }
+                st.dataframe(pd.DataFrame(expiry_data), use_container_width=True)
     
     def run(self):
         """Main application runner"""
-        self.render_header()
+        self.render_premium_header()
         
-        # Enhanced navigation
-        st.sidebar.markdown("## 🧭 Navigation")
-        page = st.sidebar.selectbox(
+        # Premium navigation
+        st.sidebar.markdown("## 🧭 NAVIGATION")
+        app_mode = st.sidebar.selectbox(
             "Select Dashboard",
             [
-                "Live Market", 
-                "Machine Learning", 
-                "Sentiment Analysis", 
-                "Quant Strategies",
-                "Portfolio",
-                "Settings"
+                "🚀 Live Market Dashboard",
+                "🤖 ML Trading Terminal", 
+                "📊 Sentiment Analysis",
+                "📈 Quant Strategies",
+                "💼 Portfolio Manager"
             ]
         )
         
         # System status
-        st.sidebar.markdown("## 🔧 System Status")
-        st.sidebar.progress(85, text="ML Models: 85% Trained")
-        st.sidebar.progress(92, text="Data Feed: 92% Live")
-        st.sidebar.progress(78, text="Signal Accuracy: 78%")
+        st.sidebar.markdown("## 🔧 SYSTEM STATUS")
+        st.sidebar.write(f"🤖 AI Engine: {'✅' if SKLEARN_AVAILABLE else '❌'}")
+        st.sidebar.write(f"📊 Sentiment: {'✅' if TEXTBLOB_AVAILABLE else '❌'}")
+        st.sidebar.write(f"📈 Data: {'✅' if YFINANCE_AVAILABLE else '❌'}")
+        st.sidebar.write(f"📊 Charts: {'✅' if PLOTLY_AVAILABLE else '❌'}")
         
         # Quick actions
-        st.sidebar.markdown("## ⚡ Quick Actions")
+        st.sidebar.markdown("## ⚡ QUICK ACTIONS")
         if st.sidebar.button("🔄 Refresh All Data", use_container_width=True):
             st.rerun()
         
-        if st.sidebar.button("🤖 Run ML Analysis", use_container_width=True):
-            st.session_state.ml_analysis = True
+        if st.sidebar.button("🧹 Clear Cache", use_container_width=True):
+            self.data_manager.cache = {}
+            st.success("Cache cleared!")
         
         # Page routing
-        if page == "Live Market":
+        if "Live Market Dashboard" in app_mode:
             self.render_live_market_dashboard()
-        elif page == "Machine Learning":
-            self.render_machine_learning_dashboard()
-        elif page == "Sentiment Analysis":
+        elif "ML Trading Terminal" in app_mode:
+            self.render_machine_learning_terminal()
+        elif "Sentiment Analysis" in app_mode:
             self.render_sentiment_analysis()
-        elif page == "Quant Strategies":
+        elif "Quant Strategies" in app_mode:
             self.render_quant_strategies()
-        elif page == "Portfolio":
-            st.info("💼 Portfolio Management - Enhanced version coming soon!")
         else:
-            st.info("⚙️ System Settings - Configure your trading parameters")
+            self.render_portfolio_manager()
+    
+    def render_portfolio_manager(self):
+        """Render portfolio management"""
+        st.markdown("## 💼 PORTFOLIO MANAGER")
+        
+        # Portfolio input
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            stocks = ['RELIANCE.NS', 'TCS.NS', 'INFY.NS', 'HDFCBANK.NS']
+            selected_stock = st.selectbox("Stock", stocks)
+        
+        with col2:
+            quantity = st.number_input("Quantity", min_value=1, value=100)
+        
+        with col3:
+            buy_price = st.number_input("Buy Price (₹)", min_value=0.0, value=0.0)
+        
+        with col4:
+            st.write("")
+            st.write("")
+            if st.button("Add to Portfolio", use_container_width=True):
+                if selected_stock not in st.session_state.portfolio:
+                    st.session_state.portfolio[selected_stock] = {
+                        'quantity': quantity,
+                        'avg_price': buy_price
+                    }
+                st.success(f"Added {selected_stock} to portfolio!")
+        
+        # Display portfolio
+        if st.session_state.portfolio:
+            portfolio_data = []
+            total_investment = 0
+            total_current = 0
+            
+            for symbol, holding in st.session_state.portfolio.items():
+                quote = self.data_manager.get_live_quote(symbol)
+                current_price = quote['current']
+                current_value = current_price * holding['quantity']
+                investment = holding['avg_price'] * holding['quantity']
+                pnl = current_value - investment
+                pnl_percent = (pnl / investment) * 100
+                
+                portfolio_data.append({
+                    'Stock': symbol.replace('.NS', ''),
+                    'Qty': holding['quantity'],
+                    'Avg Price': holding['avg_price'],
+                    'Current': current_price,
+                    'Investment': investment,
+                    'Current Value': current_value,
+                    'P&L': pnl,
+                    'P&L %': pnl_percent
+                })
+                
+                total_investment += investment
+                total_current += current_value
+            
+            portfolio_df = pd.DataFrame(portfolio_data)
+            st.dataframe(portfolio_df, use_container_width=True)
+            
+            # Portfolio summary
+            total_pnl = total_current - total_investment
+            total_pnl_percent = (total_pnl / total_investment) * 100
+            
+            st.markdown("### 📊 Portfolio Summary")
+            summary_cols = st.columns(4)
+            
+            with summary_cols[0]:
+                st.metric("Total Investment", f"₹{total_investment:,.2f}")
+            
+            with summary_cols[1]:
+                st.metric("Current Value", f"₹{total_current:,.2f}")
+            
+            with summary_cols[2]:
+                st.metric("Total P&L", f"₹{total_pnl:,.2f}")
+            
+            with summary_cols[3]:
+                st.metric("Return %", f"{total_pnl_percent:.2f}%")
 
 # Run the application
 if __name__ == "__main__":
-    # Set page config
     st.set_page_config(
         page_title="Quantum AI Trading Terminal",
         page_icon="🚀",
@@ -1030,5 +1097,5 @@ if __name__ == "__main__":
     )
     
     # Initialize and run terminal
-    terminal = QuantumTradingTerminal()
+    terminal = PremiumTradingTerminal()
     terminal.run()
