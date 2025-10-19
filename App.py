@@ -1,19 +1,48 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.graph_objects as go
-import plotly.express as px
-from plotly.subplots import make_subplots
-import yfinance as yf
-import requests
-import finnhub
-from alpha_vantage.timeseries import TimeSeries
-from alpha_vantage.techindicators import TechIndicators
+import warnings
+warnings.filterwarnings('ignore')
+
+# Graceful fallback for missing dependencies
+try:
+    import plotly.graph_objects as go
+    import plotly.express as px
+    from plotly.subplots import make_subplots
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    PLOTLY_AVAILABLE = False
+    st.warning("Plotly not available. Charts will be disabled.")
+
+try:
+    import yfinance as yf
+    YFINANCE_AVAILABLE = True
+except ImportError:
+    YFINANCE_AVAILABLE = False
+    st.warning("yfinance not available. Using fallback data.")
+
+try:
+    import finnhub
+    FINNHUB_AVAILABLE = True
+except ImportError:
+    FINNHUB_AVAILABLE = False
+
+try:
+    from alpha_vantage.timeseries import TimeSeries
+    from alpha_vantage.techindicators import TechIndicators
+    ALPHA_VANTAGE_AVAILABLE = True
+except ImportError:
+    ALPHA_VANTAGE_AVAILABLE = False
+
+try:
+    import requests
+    REQUESTS_AVAILABLE = True
+except ImportError:
+    REQUESTS_AVAILABLE = False
+
 from datetime import datetime, timedelta
 import json
 import time
-import warnings
-warnings.filterwarnings('ignore')
 
 # Page configuration
 st.set_page_config(
@@ -28,13 +57,27 @@ FINNHUB_API_KEY = "d3f027pr01qh40fg8npgd3f027pr01qh40fg8nq0"
 ALPHA_VANTAGE_API_KEY = "P1IXQ8X0N5GWVR7S"
 INDIAN_MARKET_API_KEY = "sk-live-UYMPXvoR0SLhmXlnGyqNqVhlgToFARM3mLgoBdm9"
 
-# Initialize API clients
+# Initialize API clients with error handling
+finnhub_client = None
+ts = None
+ti = None
+
 try:
-    finnhub_client = finnhub.Client(api_key=FINNHUB_API_KEY)
-    ts = TimeSeries(key=ALPHA_VANTAGE_API_KEY, output_format='pandas')
-    ti = TechIndicators(key=ALPHA_VANTAGE_API_KEY, output_format='pandas')
+    if FINNHUB_AVAILABLE:
+        finnhub_client = finnhub.Client(api_key=FINNHUB_API_KEY)
+    else:
+        st.sidebar.warning("Finnhub client not available")
 except Exception as e:
-    st.warning(f"Some API connections failed: {e}. Using enhanced fallback data.")
+    st.sidebar.warning(f"Finnhub connection failed: {e}")
+
+try:
+    if ALPHA_VANTAGE_AVAILABLE:
+        ts = TimeSeries(key=ALPHA_VANTAGE_API_KEY, output_format='pandas')
+        ti = TechIndicators(key=ALPHA_VANTAGE_API_KEY, output_format='pandas')
+    else:
+        st.sidebar.warning("Alpha Vantage not available")
+except Exception as e:
+    st.sidebar.warning(f"Alpha Vantage connection failed: {e}")
 
 # Custom CSS
 st.markdown("""
@@ -76,6 +119,14 @@ st.markdown("""
     .negative { color: #FF4444; }
 </style>
 """, unsafe_allow_html=True)
+
+def safe_plotly_chart(fig, use_container_width=True):
+    """Safely render plotly chart with fallback"""
+    if PLOTLY_AVAILABLE:
+        st.plotly_chart(fig, use_container_width=use_container_width)
+    else:
+        st.warning("Plotly charts not available - please install plotly")
+        st.code("pip install plotly")
 
 # ==================== QUANTUM TRADING MODULES ====================
 
@@ -566,18 +617,23 @@ class QuantumQuantTradingTerminal:
         self.fractal_analyzer = FractalMarketAnalysis()
         self.info_theory = InformationTheoryTrading()
     
-    def get_yahoo_data(self, symbol, period="1y"):
+    @st.cache_data(ttl=3600)  # Cache for 1 hour
+    def get_yahoo_data(_self, symbol, period="1y"):
         """Get historical data from Yahoo Finance"""
         try:
+            if not YFINANCE_AVAILABLE:
+                return _self.generate_enhanced_fallback_data()
+                
             ticker = yf.Ticker(symbol)
             data = ticker.history(period=period)
             if data.empty:
-                return self.generate_enhanced_fallback_data()
+                return _self.generate_enhanced_fallback_data()
             return data
         except Exception as e:
-            return self.generate_enhanced_fallback_data()
+            st.sidebar.warning(f"Yahoo Finance data unavailable for {symbol}: {e}")
+            return _self.generate_enhanced_fallback_data()
     
-    def generate_enhanced_fallback_data(self):
+    def generate_enhanced_fallback_data(_self):
         """Generate enhanced fallback data with realistic patterns"""
         dates = pd.date_range(start='2023-01-01', end=datetime.now(), freq='D')
         n = len(dates)
@@ -626,6 +682,17 @@ class QuantumQuantTradingTerminal:
             st.write("• Multi-Modal Sentiment")
             st.write("• Stochastic Volatility Models")
             st.markdown('</div>', unsafe_allow_html=True)
+            
+            # Dependency status
+            st.markdown("---")
+            st.markdown("## 🔧 System Status")
+            status_col1, status_col2 = st.columns(2)
+            with status_col1:
+                st.write(f"📊 Plotly: {'✅' if PLOTLY_AVAILABLE else '❌'}")
+                st.write(f"📈 yfinance: {'✅' if YFINANCE_AVAILABLE else '❌'}")
+            with status_col2:
+                st.write(f"🔗 Finnhub: {'✅' if FINNHUB_AVAILABLE else '❌'}")
+                st.write(f"📡 Alpha Vantage: {'✅' if ALPHA_VANTAGE_AVAILABLE else '❌'}")
         
         # Page routing
         if page == "Quantum Dashboard":
@@ -789,24 +856,28 @@ class QuantumQuantTradingTerminal:
                 fear_greed = self.multi_modal_sentiment.fear_greed_index(data)
                 st.subheader("😨😊 Fear & Greed Index")
                 
-                fig = go.Figure(go.Indicator(
-                    mode="gauge+number",
-                    value=fear_greed['composite_index'],
-                    domain={'x': [0, 1], 'y': [0, 1]},
-                    title={'text': "Market Sentiment"},
-                    gauge={
-                        'axis': {'range': [0, 100]},
-                        'bar': {'color': "darkblue"},
-                        'steps': [
-                            {'range': [0, 25], 'color': "red"},
-                            {'range': [25, 45], 'color': "orange"},
-                            {'range': [45, 55], 'color': "yellow"},
-                            {'range': [55, 75], 'color': "lightgreen"},
-                            {'range': [75, 100], 'color': "green"}],
-                    }
-                ))
-                fig.update_layout(height=300)
-                st.plotly_chart(fig, use_container_width=True)
+                if PLOTLY_AVAILABLE:
+                    fig = go.Figure(go.Indicator(
+                        mode="gauge+number",
+                        value=fear_greed['composite_index'],
+                        domain={'x': [0, 1], 'y': [0, 1]},
+                        title={'text': "Market Sentiment"},
+                        gauge={
+                            'axis': {'range': [0, 100]},
+                            'bar': {'color': "darkblue"},
+                            'steps': [
+                                {'range': [0, 25], 'color': "red"},
+                                {'range': [25, 45], 'color': "orange"},
+                                {'range': [45, 55], 'color': "yellow"},
+                                {'range': [55, 75], 'color': "lightgreen"},
+                                {'range': [75, 100], 'color': "green"}],
+                        }
+                    ))
+                    fig.update_layout(height=300)
+                    safe_plotly_chart(fig)
+                else:
+                    st.metric("Fear & Greed Score", f"{fear_greed['composite_index']:.1f}")
+                    st.write(f"**Sentiment:** {fear_greed['sentiment']}")
 
     def fractal_analysis_page(self):
         """Fractal market analysis interface"""
@@ -835,23 +906,27 @@ class QuantumQuantTradingTerminal:
             # Fractal analysis chart
             st.subheader("📊 Fractal Analysis Chart")
             
-            fig = make_subplots(rows=2, cols=1, subplot_titles=('Price Series', 'Fractal Scaling'),
-                              vertical_spacing=0.08)
-            
-            # Price series
-            fig.add_trace(go.Scatter(x=data.index, y=data['Close'], name='Price',
-                                   line=dict(color='#00FF00')), row=1, col=1)
-            
-            # Mock fractal scaling analysis
-            scales = np.logspace(1, 3, 20).astype(int)
-            fluctuations = [np.random.uniform(0.1, 0.5) for _ in scales]  # Mock fluctuations
-            
-            fig.add_trace(go.Scatter(x=np.log(scales), y=np.log(fluctuations), 
-                                   name='Scaling Law', mode='markers+lines',
-                                   line=dict(color='#FF00FF')), row=2, col=1)
-            
-            fig.update_layout(height=600, template="plotly_dark", showlegend=True)
-            st.plotly_chart(fig, use_container_width=True)
+            if PLOTLY_AVAILABLE:
+                fig = make_subplots(rows=2, cols=1, subplot_titles=('Price Series', 'Fractal Scaling'),
+                                  vertical_spacing=0.08)
+                
+                # Price series
+                fig.add_trace(go.Scatter(x=data.index, y=data['Close'], name='Price',
+                                       line=dict(color='#00FF00')), row=1, col=1)
+                
+                # Mock fractal scaling analysis
+                scales = np.logspace(1, 3, 20).astype(int)
+                fluctuations = [np.random.uniform(0.1, 0.5) for _ in scales]  # Mock fluctuations
+                
+                fig.add_trace(go.Scatter(x=np.log(scales), y=np.log(fluctuations), 
+                                       name='Scaling Law', mode='markers+lines',
+                                       line=dict(color='#FF00FF')), row=2, col=1)
+                
+                fig.update_layout(height=600, template="plotly_dark", showlegend=True)
+                safe_plotly_chart(fig)
+            else:
+                st.line_chart(data['Close'])
+                st.info("Install plotly for advanced fractal charts")
             
             # Fractal trading signals
             st.subheader("🎯 Fractal Trading Signals")
@@ -886,11 +961,15 @@ class QuantumQuantTradingTerminal:
             credibility_scores.append({'Source': source, 'Credibility Score': score})
         
         df_credibility = pd.DataFrame(credibility_scores)
-        fig = px.bar(df_credibility, x='Source', y='Credibility Score', 
-                    title="Source Credibility Analysis", color='Credibility Score',
-                    color_continuous_scale='Viridis')
-        fig.update_layout(template="plotly_dark")
-        st.plotly_chart(fig, use_container_width=True)
+        
+        if PLOTLY_AVAILABLE:
+            fig = px.bar(df_credibility, x='Source', y='Credibility Score', 
+                        title="Source Credibility Analysis", color='Credibility Score',
+                        color_continuous_scale='Viridis')
+            fig.update_layout(template="plotly_dark")
+            safe_plotly_chart(fig)
+        else:
+            st.bar_chart(df_credibility.set_index('Source'))
         
         # Behavioral finance indicators
         st.subheader("🧠 Behavioral Finance Indicators")
@@ -921,19 +1000,25 @@ class QuantumQuantTradingTerminal:
         
         fused_sentiment = sum(s * w for s, w in zip(sentiment_scores, weights))
         
-        fig = go.Figure()
-        fig.add_trace(go.Bar(x=modalities, y=sentiment_scores, name='Raw Sentiment'))
-        fig.add_trace(go.Scatter(x=modalities, y=weights, name='Weights', yaxis='y2',
-                               line=dict(color='red', dash='dash')))
-        
-        fig.update_layout(
-            title="Multi-Modal Sentiment Fusion",
-            yaxis=dict(title="Sentiment Score"),
-            yaxis2=dict(title="Weights", overlaying='y', side='right'),
-            template="plotly_dark"
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
+        if PLOTLY_AVAILABLE:
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=modalities, y=sentiment_scores, name='Raw Sentiment'))
+            fig.add_trace(go.Scatter(x=modalities, y=weights, name='Weights', yaxis='y2',
+                                   line=dict(color='red', dash='dash')))
+            
+            fig.update_layout(
+                title="Multi-Modal Sentiment Fusion",
+                yaxis=dict(title="Sentiment Score"),
+                yaxis2=dict(title="Weights", overlaying='y', side='right'),
+                template="plotly_dark"
+            )
+            
+            safe_plotly_chart(fig)
+        else:
+            st.write("**Sentiment Scores:**")
+            for mod, score in zip(modalities, sentiment_scores):
+                st.write(f"- {mod}: {score:.3f}")
+            st.write(f"**Fused Sentiment:** {fused_sentiment:.3f}")
         
         sentiment_status = "Bullish" if fused_sentiment > 0.1 else "Bearish" if fused_sentiment < -0.1 else "Neutral"
         st.metric("Fused Sentiment Score", f"{fused_sentiment:.3f}", sentiment_status)
@@ -971,12 +1056,18 @@ class QuantumQuantTradingTerminal:
                 # Risk distribution chart
                 st.subheader("📊 Risk Distribution Analysis")
                 
-                fig = go.Figure()
-                fig.add_trace(go.Histogram(x=returns, name='Returns Distribution', nbinsx=50))
-                fig.add_vline(x=-cvar_95, line_dash="dash", line_color="red", annotation_text="95% CVaR")
-                fig.add_vline(x=-cvar_99, line_dash="dash", line_color="darkred", annotation_text="99% CVaR")
-                fig.update_layout(title="Returns Distribution with CVaR Levels", template="plotly_dark")
-                st.plotly_chart(fig, use_container_width=True)
+                if PLOTLY_AVAILABLE:
+                    fig = go.Figure()
+                    fig.add_trace(go.Histogram(x=returns, name='Returns Distribution', nbinsx=50))
+                    fig.add_vline(x=-cvar_95, line_dash="dash", line_color="red", annotation_text="95% CVaR")
+                    fig.add_vline(x=-cvar_99, line_dash="dash", line_color="darkred", annotation_text="99% CVaR")
+                    fig.update_layout(title="Returns Distribution with CVaR Levels", template="plotly_dark")
+                    safe_plotly_chart(fig)
+                else:
+                    st.info("Install plotly for risk distribution charts")
+                    st.write(f"Returns std: {returns.std():.3f}")
+                    st.write(f"95% CVaR: {cvar_95:.3f}")
+                    st.write(f"99% CVaR: {cvar_99:.3f}")
                 
                 # Stress testing
                 st.subheader("🔥 Portfolio Stress Testing")
@@ -1024,23 +1115,27 @@ class QuantumQuantTradingTerminal:
                     )
                     
                     # Display results
-                    fig = make_subplots(rows=2, cols=1, subplot_titles=('Price Simulations', 'Volatility Simulations'))
-                    
-                    # Plot first 50 price paths
-                    for i in range(min(50, len(prices))):
-                        fig.add_trace(go.Scatter(y=prices[i], mode='lines', 
-                                               line=dict(width=1, color='rgba(0,255,0,0.1)'),
-                                               showlegend=False), row=1, col=1)
-                    
-                    # Plot first 50 volatility paths
-                    for i in range(min(50, len(volatilities))):
-                        fig.add_trace(go.Scatter(y=volatilities[i], mode='lines',
-                                               line=dict(width=1, color='rgba(255,0,0,0.1)'),
-                                               showlegend=False), row=2, col=1)
-                    
-                    fig.update_layout(height=600, template="plotly_dark", 
-                                    title="Heston Model: Price and Volatility Simulations")
-                    st.plotly_chart(fig, use_container_width=True)
+                    if PLOTLY_AVAILABLE:
+                        fig = make_subplots(rows=2, cols=1, subplot_titles=('Price Simulations', 'Volatility Simulations'))
+                        
+                        # Plot first 50 price paths
+                        for i in range(min(50, len(prices))):
+                            fig.add_trace(go.Scatter(y=prices[i], mode='lines', 
+                                                   line=dict(width=1, color='rgba(0,255,0,0.1)'),
+                                                   showlegend=False), row=1, col=1)
+                        
+                        # Plot first 50 volatility paths
+                        for i in range(min(50, len(volatilities))):
+                            fig.add_trace(go.Scatter(y=volatilities[i], mode='lines',
+                                                   line=dict(width=1, color='rgba(255,0,0,0.1)'),
+                                                   showlegend=False), row=2, col=1)
+                        
+                        fig.update_layout(height=600, template="plotly_dark", 
+                                        title="Heston Model: Price and Volatility Simulations")
+                        safe_plotly_chart(fig)
+                    else:
+                        st.info("Heston simulation completed (install plotly for charts)")
+                        st.write(f"Simulated {len(prices)} price paths")
                     
                     # Statistics
                     final_prices = prices[:, -1]
