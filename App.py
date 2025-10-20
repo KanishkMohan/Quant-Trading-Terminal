@@ -1243,6 +1243,8 @@ class QuantumTradingTerminal:
             st.session_state.algo_strategies = {}
         if 'ai_models_trained' not in st.session_state:
             st.session_state.ai_models_trained = {}
+        if 'current_page' not in st.session_state:
+            st.session_state.current_page = "Live Market Dashboard"
     
     def render_premium_header(self):
         """Render premium application header"""
@@ -1278,18 +1280,45 @@ class QuantumTradingTerminal:
             padding: 1rem;
             box-shadow: 0 0 20px rgba(0, 255, 170, 0.2);
         }
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 2px;
-        }
-        .stTabs [data-baseweb="tab"] {
-            height: 50px;
-            white-space: pre-wrap;
-            background-color: #1e1e1e;
-            border-radius: 5px 5px 0px 0px;
-            gap: 1px;
-            padding-top: 10px;
-            padding-bottom: 10px;
+        .nav-button {
+            background: linear-gradient(135deg, #0A0A0A 0%, #1A1A2E 50%, #16213E 100%);
+            border: 1px solid #00FFAA;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 0.2rem;
+            color: white;
             font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 255, 170, 0.2);
+        }
+        .nav-button:hover {
+            background: linear-gradient(135deg, #00FFAA 0%, #0088FF 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 170, 0.4);
+        }
+        .nav-button.active {
+            background: linear-gradient(135deg, #00FFAA 0%, #0088FF 100%);
+            border-color: #0088FF;
+            box-shadow: 0 0 20px rgba(0, 255, 170, 0.6);
+        }
+        .system-status {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-left: 4px solid #00FFAA;
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.3rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .status-item:last-child {
+            border-bottom: none;
         }
         </style>
         """, unsafe_allow_html=True)
@@ -1323,6 +1352,103 @@ class QuantumTradingTerminal:
             st.markdown('<div class="metric-glowing">', unsafe_allow_html=True)
             st.metric("🎯 OPTIONS", "₹1.24 Cr", "+2.15%")
             st.markdown('</div>', unsafe_allow_html=True)
+
+    def render_button_navigation(self):
+        """Render button-based navigation slicer"""
+        st.markdown("## 🧭 QUANTUM NAVIGATION")
+        
+        # Define navigation buttons
+        nav_buttons = [
+            ("🚀 Live Market Dashboard", "Live Market Dashboard"),
+            ("🤖 AI Trading Terminal", "AI Trading Terminal"), 
+            ("⚡ Algo Trading", "Algo Trading"),
+            ("📊 Sentiment Analysis", "Sentiment Analysis"),
+            ("📈 Quant Strategies", "Quant Strategies"),
+            ("💼 Portfolio Manager", "Portfolio Manager")
+        ]
+        
+        # Create 2 columns for buttons
+        cols = st.columns(3)
+        
+        for idx, (button_text, page_name) in enumerate(nav_buttons):
+            with cols[idx % 3]:
+                is_active = st.session_state.current_page == page_name
+                button_class = "nav-button active" if is_active else "nav-button"
+                
+                if st.button(
+                    button_text,
+                    key=f"nav_{idx}",
+                    use_container_width=True,
+                    type="primary" if is_active else "secondary"
+                ):
+                    st.session_state.current_page = page_name
+                    st.rerun()
+
+    def render_system_status(self):
+        """Render comprehensive system status"""
+        st.markdown("## 🔧 SYSTEM STATUS")
+        
+        # System metrics
+        status_items = [
+            ("🤖 AI Engine", SKLEARN_AVAILABLE, "Machine Learning models"),
+            ("📊 Visualization", PLOTLY_AVAILABLE, "Advanced charting"),
+            ("📈 Market Data", YFINANCE_AVAILABLE, "Real-time data feeds"),
+            ("📊 Statistics", SCIPY_AVAILABLE, "Statistical analysis"),
+            ("🧠 Deep Learning", TENSORFLOW_AVAILABLE, "Neural networks"),
+            ("📰 Sentiment", TEXTBLOB_AVAILABLE, "Text analysis")
+        ]
+        
+        for item_name, is_available, description in status_items:
+            status_color = "🟢" if is_available else "🔴"
+            status_text = "ACTIVE" if is_available else "UNAVAILABLE"
+            
+            st.markdown(f"""
+            <div class="system-status">
+                <div class="status-item">
+                    <div>
+                        <strong>{item_name}</strong>
+                        <br><small>{description}</small>
+                    </div>
+                    <div>
+                        <span style="color: {'#00FFAA' if is_available else '#FF4444'};">
+                            {status_color} {status_text}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Performance metrics
+        st.markdown("### 📊 PERFORMANCE METRICS")
+        perf_cols = st.columns(3)
+        
+        with perf_cols[0]:
+            st.metric("Data Cache", f"{len(self.data_manager.data_cache)}", "items")
+        
+        with perf_cols[1]:
+            st.metric("Quote Cache", f"{len(self.data_manager.quote_cache)}", "items")
+        
+        with perf_cols[2]:
+            st.metric("Response Time", "0.45s", "-0.12s")
+        
+        # Quick actions
+        st.markdown("### ⚡ QUICK ACTIONS")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🔄 Refresh All Data", use_container_width=True):
+                self.data_manager.data_cache = {}
+                self.data_manager.quote_cache = {}
+                st.success("All data refreshed!")
+                st.rerun()
+        
+        with col2:
+            if st.button("🧹 Clear Cache", use_container_width=True):
+                self.data_manager.data_cache = {}
+                self.data_manager.quote_cache = {}
+                self.sentiment_analyzer.sentiment_cache = {}
+                st.success("All caches cleared!")
 
     def render_live_market_dashboard(self):
         """Render comprehensive live market dashboard"""
@@ -1419,7 +1545,7 @@ class QuantumTradingTerminal:
                         with tech_cols[3]:
                             trend = "BULLISH" if live_quote['current'] > sma_20 else "BEARISH"
                             st.metric("Trend", trend)
-    
+
     def render_machine_learning_dashboard(self):
         """Render advanced ML trading dashboard"""
         st.markdown("## 🤖 QUANTUM AI TRADING DASHBOARD")
@@ -1517,7 +1643,7 @@ class QuantumTradingTerminal:
                             forecast_chart = self.chart_engine.create_forecast_chart(data, forecast_data, selected_stock)
                             if forecast_chart:
                                 st.plotly_chart(forecast_chart, use_container_width=True)
-    
+
     def render_algo_trading_dashboard(self):
         """Render algorithmic trading dashboard"""
         st.markdown("## ⚡ ALGORITHMIC TRADING DASHBOARD")
@@ -1590,7 +1716,7 @@ class QuantumTradingTerminal:
             
             st.success(f"✅ Strategy '{strategy_name}' deployed successfully!")
             st.info(f"🎯 Strategy Type: {strategy_type} | 📊 Stocks: {len(selected_stocks)} | ⚡ Risk: {risk_tolerance}")
-    
+
     def _render_live_trading_bot(self):
         """Render live trading bot interface"""
         st.markdown("### 🤖 Live Trading Bot")
@@ -1661,7 +1787,7 @@ class QuantumTradingTerminal:
                     st.info("No active positions")
             else:
                 st.warning("Trading bot is currently inactive. Start the bot to begin automated trading.")
-    
+
     def _render_backtesting_engine(self):
         """Render backtesting interface"""
         st.markdown("### 📊 Strategy Backtesting")
@@ -1760,7 +1886,7 @@ class QuantumTradingTerminal:
                             st.dataframe(trades_df, use_container_width=True)
                         else:
                             st.warning("No trades were executed during the backtest period.")
-    
+
     def _render_performance_analytics(self):
         """Render performance analytics dashboard"""
         st.markdown("### 📊 Performance Analytics")
@@ -1828,7 +1954,7 @@ class QuantumTradingTerminal:
         
         with risk_cols[2]:
             st.metric("Conditional VaR", "₹18,670", "-₹980")
-    
+
     def render_sentiment_analysis(self):
         """Render advanced sentiment analysis dashboard"""
         st.markdown("## 📊 ADVANCED SENTIMENT ANALYSIS")
@@ -1915,7 +2041,7 @@ class QuantumTradingTerminal:
                     <p style='margin: 5px 0 0 0; color: #CCCCCC;'>Based on multi-source sentiment analysis and AI algorithms</p>
                 </div>
                 """, unsafe_allow_html=True)
-    
+
     def render_quant_strategies(self):
         """Render quantitative strategies dashboard"""
         st.markdown("## 📊 QUANTITATIVE STRATEGIES")
@@ -1995,7 +2121,7 @@ class QuantumTradingTerminal:
                 name, description = greek_info[greek]
                 st.metric(name, f"{value:.4f}")
                 st.caption(description)
-    
+
     def _render_option_greeks(self):
         """Render option Greeks analysis"""
         st.markdown("### 📊 Option Greeks Analysis")
@@ -2029,7 +2155,7 @@ class QuantumTradingTerminal:
                             labels={'x': 'Spot Price (₹)', 'y': f'{greek_to_plot} Value'})
                 fig.update_layout(template="plotly_dark")
                 st.plotly_chart(fig, use_container_width=True)
-    
+
     def _render_option_chain(self):
         """Render live option chain"""
         st.markdown("### 🔗 Live Option Chain Analysis")
@@ -2103,7 +2229,7 @@ class QuantumTradingTerminal:
             )
             
             st.plotly_chart(fig, use_container_width=True)
-    
+
     def _render_futures_expiry(self):
         """Render futures and expiry analysis"""
         st.markdown("### ⚡ Futures & Expiry Analysis")
@@ -2144,7 +2270,7 @@ class QuantumTradingTerminal:
             st.metric("Total Open Interest", "7.3M Contracts", "+245K")
             st.metric("Put-Call Ratio", "0.89", "-0.03")
             st.metric("VIX Index", "14.25", "-0.45")
-    
+
     def render_portfolio_manager(self):
         """Render comprehensive portfolio management"""
         st.markdown("## 💼 ADVANCED PORTFOLIO MANAGER")
@@ -2225,7 +2351,7 @@ class QuantumTradingTerminal:
                 st.dataframe(holdings_df, use_container_width=True)
         else:
             st.info("Your portfolio is empty. Add some stocks to get started.")
-    
+
     def _render_trade_execution(self):
         """Render trade execution interface"""
         st.markdown("### 💰 Trade Execution")
@@ -2279,7 +2405,7 @@ class QuantumTradingTerminal:
                         st.success(f"✅ Sold {quantity} shares of {stock} at ₹{price:.2f}")
                     else:
                         st.error("❌ Insufficient shares to sell")
-    
+
     def _render_risk_analysis(self):
         """Render portfolio risk analysis"""
         st.markdown("### ⚠️ Portfolio Risk Analysis")
@@ -2316,7 +2442,7 @@ class QuantumTradingTerminal:
                         title="Portfolio Sector Allocation")
             fig.update_layout(template="plotly_dark")
             st.plotly_chart(fig, use_container_width=True)
-    
+
     def _render_portfolio_performance(self):
         """Render portfolio performance analytics"""
         st.markdown("### 📊 Portfolio Performance Analytics")
@@ -2364,48 +2490,17 @@ class QuantumTradingTerminal:
             )
             
             st.plotly_chart(fig, use_container_width=True)
-    
+
     def run(self):
         """Main application runner"""
         self.render_premium_header()
         
-        # Premium navigation
-        st.sidebar.markdown("## 🧭 QUANTUM NAVIGATION")
+        # Render button navigation
+        self.render_button_navigation()
         
-        app_mode = st.sidebar.selectbox(
-            "Select Dashboard",
-            [
-                "🚀 Live Market Dashboard",
-                "🤖 AI Trading Terminal", 
-                "⚡ Algo Trading",
-                "📊 Sentiment Analysis",
-                "📈 Quant Strategies",
-                "💼 Portfolio Manager"
-            ]
-        )
-        
-        # System status
+        # Render system status in sidebar
         st.sidebar.markdown("## 🔧 SYSTEM STATUS")
-        st.sidebar.write(f"🤖 AI Engine: {'✅' if SKLEARN_AVAILABLE else '❌'}")
-        st.sidebar.write(f"📊 Visualization: {'✅' if PLOTLY_AVAILABLE else '❌'}")
-        st.sidebar.write(f"📈 Market Data: {'✅' if YFINANCE_AVAILABLE else '❌'}")
-        st.sidebar.write(f"📊 Statistics: {'✅' if SCIPY_AVAILABLE else '❌'}")
-        st.sidebar.write(f"🧠 Deep Learning: {'✅' if TENSORFLOW_AVAILABLE else '❌'}")
-        st.sidebar.write(f"📰 Sentiment: {'✅' if TEXTBLOB_AVAILABLE else '❌'}")
-        
-        # Quick actions
-        st.sidebar.markdown("## ⚡ QUICK ACTIONS")
-        
-        if st.sidebar.button("🔄 Refresh All Data", use_container_width=True):
-            self.data_manager.data_cache = {}
-            self.data_manager.quote_cache = {}
-            st.rerun()
-        
-        if st.sidebar.button("🧹 Clear Cache", use_container_width=True):
-            self.data_manager.data_cache = {}
-            self.data_manager.quote_cache = {}
-            self.sentiment_analyzer.sentiment_cache = {}
-            st.success("All caches cleared!")
+        self.render_system_status()
         
         # Market hours
         st.sidebar.markdown("## 🕒 MARKET HOURS")
@@ -2413,18 +2508,20 @@ class QuantumTradingTerminal:
         st.sidebar.write("**Pre-open:** 9:00 AM - 9:08 AM")
         st.sidebar.write("**Next Session:** Today 9:15 AM")
         
-        # Page routing
-        if "Live Market Dashboard" in app_mode:
+        # Page routing based on button selection
+        current_page = st.session_state.current_page
+        
+        if current_page == "Live Market Dashboard":
             self.render_live_market_dashboard()
-        elif "AI Trading Terminal" in app_mode:
+        elif current_page == "AI Trading Terminal":
             self.render_machine_learning_dashboard()
-        elif "Algo Trading" in app_mode:
+        elif current_page == "Algo Trading":
             self.render_algo_trading_dashboard()
-        elif "Sentiment Analysis" in app_mode:
+        elif current_page == "Sentiment Analysis":
             self.render_sentiment_analysis()
-        elif "Quant Strategies" in app_mode:
+        elif current_page == "Quant Strategies":
             self.render_quant_strategies()
-        else:
+        else:  # Portfolio Manager
             self.render_portfolio_manager()
 
 # Run the application
